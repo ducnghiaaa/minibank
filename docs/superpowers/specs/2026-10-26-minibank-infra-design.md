@@ -55,7 +55,9 @@ CI **[claude]**. State của nó nằm trong **một bucket nhỏ riêng ở ch�
 ## 3. Region và tên miền
 
 - `ap-southeast-1` (Singapore) **[user]**.
-- **Tên miền: chưa chốt [user].** Thiết kế cần một tên miền ngay từ đợt 1 — xem mục 7.2 vì sao.
+- **Tên miền: `andrewnguyen.cloud` [user]** — mua ở GoDaddy (2026-11-16), DNS ủy quyền về hosted
+  zone public trong account `workload`. Zone tạo tay, Terraform sẽ `import` vào stack persistent;
+  không xoá/tạo lại zone (NS sẽ đổi, phải sửa lại ở GoDaddy).
 
 ## 4. Hai stack: persistent và ephemeral
 
@@ -154,7 +156,7 @@ dịch** đi dạng rõ. Với app ngân hàng, đó là điều không chấp n
 | Cognito Managed Login | `auth.<domain>` (custom domain) |
 | Route 53 hosted zone | persistent, ~$0.50/tháng |
 
-**Tên miền: phụ thuộc quyết định của người dùng (mục 3).**
+**Tên miền: `andrewnguyen.cloud` (mục 3)** — `bank.`, `origin.`, `auth.andrewnguyen.cloud`.
 
 ## 8. Dữ liệu, bảo mật, nhắn tin (persistent)
 
