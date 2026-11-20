@@ -18,6 +18,8 @@ import (
 	"github.com/ducnghiaaa/minibank/services/account/internal/accounts"
 	"github.com/ducnghiaaa/minibank/services/account/internal/api"
 	"github.com/ducnghiaaa/minibank/services/account/internal/db"
+	"github.com/ducnghiaaa/minibank/services/account/internal/transfers"
+	"github.com/ducnghiaaa/minibank/services/account/internal/txntoken"
 )
 
 func main() {
@@ -50,11 +52,20 @@ func main() {
 	}
 	verifier := auth.Verifier{Issuer: mustEnv(log, "AUTH_ISSUER"), Keyfunc: jwks.Keyfunc}
 
+	// transaction tokens come from the security service (devtoken locally), with their own keys
+	txnJWKS, err := keyfunc.NewDefaultCtx(ctx, []string{mustEnv(log, "TXN_JWKS_URL")})
+	if err != nil {
+		log.Error("txn jwks", "err", err)
+		os.Exit(1)
+	}
+	txnVerifier := txntoken.Verifier{Issuer: mustEnv(log, "TXN_ISSUER"), Keyfunc: txnJWKS.Keyfunc}
+
 	router := api.NewRouter(api.Deps{
-		DB:       pool,
-		Accounts: accounts.Service{Pool: pool},
-		Auth:     verifier.Middleware,
-		Log:      log,
+		DB:        pool,
+		Accounts:  accounts.Service{Pool: pool},
+		Transfers: transfers.Service{Pool: pool, Tokens: txnVerifier},
+		Auth:      verifier.Middleware,
+		Log:       log,
 	})
 	addr := ":" + getenv("PORT", "8080")
 	if err := httpserver.Run(ctx, log, addr, router); err != nil {

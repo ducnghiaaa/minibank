@@ -4,12 +4,14 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/ducnghiaaa/minibank/internal/platform/auth"
 	"github.com/ducnghiaaa/minibank/services/account/internal/accounts"
+	"github.com/ducnghiaaa/minibank/services/account/internal/transfers"
 )
 
 // Pinger reports whether the database answers.
@@ -22,12 +24,18 @@ type Accounts interface {
 	Me(ctx context.Context, sub, name string) (accounts.Account, error)
 }
 
+// Transfers moves money between customers.
+type Transfers interface {
+	Transfer(ctx context.Context, r transfers.Request) (transfers.Result, error)
+}
+
 // Deps are what the handlers need.
 type Deps struct {
-	DB       Pinger
-	Accounts Accounts
-	Auth     func(http.Handler) http.Handler
-	Log      *slog.Logger
+	DB        Pinger
+	Accounts  Accounts
+	Transfers Transfers
+	Auth      func(http.Handler) http.Handler
+	Log       *slog.Logger
 }
 
 // NewRouter returns the account service routes.
@@ -54,10 +62,76 @@ func NewRouter(d Deps) http.Handler {
 			text(w, http.StatusInternalServerError, "internal error")
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(a)
+		writeJSON(w, http.StatusOK, a)
+	})))
+
+	mux.Handle("POST /transfers", d.Auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			ToAccount string `json:"to_account"`
+			Amount    int64  `json:"amount"`
+			Note      string `json:"note"`
+		}
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&body); err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_json", "body must be JSON: to_account, amount, note")
+			return
+		}
+		c, _ := auth.FromContext(r.Context())
+		res, err := d.Transfers.Transfer(r.Context(), transfers.Request{
+			Sub: c.Sub, ToAccount: body.ToAccount, Amount: body.Amount, Note: body.Note,
+			IdempotencyKey: r.Header.Get("Idempotency-Key"),
+			Token:          r.Header.Get("X-Transaction-Token"),
+		})
+		if err != nil {
+			code, slug := transferError(err)
+			if code == http.StatusInternalServerError {
+				d.Log.Error("transfers", "err", err)
+				writeError(w, code, slug, "internal error")
+				return
+			}
+			writeError(w, code, slug, err.Error())
+			return
+		}
+		if res.Replayed {
+			w.Header().Set("Idempotent-Replayed", "true")
+		}
+		writeJSON(w, http.StatusOK, res)
 	})))
 	return mux
+}
+
+// transferError maps a transfer error to an HTTP status and a stable code the frontend can switch on.
+func transferError(err error) (int, string) {
+	switch {
+	case errors.Is(err, transfers.ErrInvalid):
+		return http.StatusBadRequest, "invalid_request"
+	case errors.Is(err, transfers.ErrTokenInvalid):
+		return http.StatusForbidden, "transaction_token_invalid"
+	case errors.Is(err, transfers.ErrTokenAlreadyUsed):
+		return http.StatusForbidden, "transaction_token_used"
+	case errors.Is(err, transfers.ErrNoAccount):
+		return http.StatusNotFound, "no_account"
+	case errors.Is(err, transfers.ErrIdempotencyReused):
+		return http.StatusConflict, "idempotency_key_reused"
+	case errors.Is(err, transfers.ErrRecipientNotFound):
+		return http.StatusUnprocessableEntity, "recipient_not_found"
+	case errors.Is(err, transfers.ErrSelfTransfer):
+		return http.StatusUnprocessableEntity, "self_transfer"
+	case errors.Is(err, transfers.ErrDailyLimit):
+		return http.StatusUnprocessableEntity, "daily_limit_exceeded"
+	case errors.Is(err, transfers.ErrInsufficientFunds):
+		return http.StatusUnprocessableEntity, "insufficient_funds"
+	}
+	return http.StatusInternalServerError, "internal"
+}
+
+func writeJSON(w http.ResponseWriter, code int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(v)
+}
+
+func writeError(w http.ResponseWriter, code int, slug, msg string) {
+	writeJSON(w, code, map[string]string{"error": slug, "message": msg})
 }
 
 func text(w http.ResponseWriter, code int, msg string) {
