@@ -345,8 +345,9 @@ section[hidden] { display: none; }
             <li><i class="dot done"></i><span>Chạy local: <code>compose.yaml</code> (PR 1)</span></li>
             <li><i class="dot done"></i><span><code>account</code> PR 2 — schema sổ cái</span></li>
             <li><i class="dot done"></i><span><code>account</code> PR 3 — mở tài khoản, ghi sổ</span></li>
-            <li><i class="dot next"></i><span><code>account</code> PR 4 — chuyển tiền</span></li>
-            <li><i class="dot todo"></i><span><code>account</code> PR 5 — tra người nhận, lịch sử</span></li>
+            <li><i class="dot done"></i><span><code>account</code> PR 4 — chuyển tiền</span></li>
+            <li><i class="dot next"></i><span><code>account</code> PR 5 — tra người nhận, lịch sử</span></li>
+            <li><i class="dot todo"></i><span><code>account</code> PR 6 — thanh toán merchant</span></li>
             <li><i class="dot todo"></i><span><code>security</code> — PIN, token</span></li>
             <li><i class="dot todo"></i><span><code>notification</code> — WebSocket</span></li>
             <li><i class="dot todo"></i><span><code>frontend</code> — React</span></li>
@@ -382,24 +383,16 @@ section[hidden] { display: none; }
         </article>
         <article class="preview">
           <p class="tag">Hướng B · App</p>
-          <h2><code>account</code> PR 4 — chuyển tiền</h2>
-          <p><code>POST /transfers</code> theo đúng thuật toán spec §5.2, trong một transaction Postgres. Đây là phần quan trọng nhất của ngân hàng: không mất tiền, không nhân đôi tiền.</p>
-<pre class="tree">services/account/internal/
-  transfers/transfer.go     idempotency → kiểm token giao dịch → chống replay
-                            → khoá → kiểm số dư + hạn mức → ledger.Post
-  api/transfers.go          POST /transfers (header Idempotency-Key,
-                            X-Transaction-Token)
-cmd/devtoken/               thêm token giao dịch ES256 (thay security tạm thời)</pre>
+          <h2><code>account</code> PR 5 — tra người nhận + lịch sử</h2>
+          <p>Hai API chỉ đọc mà màn hình chuyển tiền và lịch sử trong tab App cần.</p>
           <div class="tbl"><table>
-            <tr><th>Tình huống</th><th>Kết quả mong đợi (có test)</th></tr>
-            <tr><td>Gửi lại cùng <code>Idempotency-Key</code>, cùng nội dung</td><td>200, trả lại kết quả cũ, không trừ tiền lần 2</td></tr>
-            <tr><td>Cùng key, nội dung khác</td><td>409</td></tr>
-            <tr><td>Dùng lại token giao dịch (cùng <code>jti</code>)</td><td>Từ chối</td></tr>
-            <tr><td>Số tiền ngoài 1.000đ–50.000.000đ, vượt 100.000.000đ/ngày, chuyển cho chính mình</td><td>400 / 422</td></tr>
-            <tr><td>A→B và B→A cùng lúc, nhiều lần</td><td>Không deadlock, bất biến tổng = 0</td></tr>
+            <tr><th>API</th><th>Quy tắc</th></tr>
+            <tr><td class="mono">GET /accounts/lookup?number=</td><td>Trả tên đã che (<code>NGUYEN VAN AN</code> → <code>NGUYEN V. A</code>); chỉ tài khoản khách; số sai Luhn → 400</td></tr>
+            <tr><td class="mono">GET /transactions</td><td>Mới nhất trước, phân trang bằng cursor; lọc theo thời gian, chiều vào/ra, danh mục; mỗi dòng có số dư sau giao dịch</td></tr>
           </table></div>
           <dl class="kv">
-            <dt>Tạm thời</dt><dd>Token giao dịch do <code>devtoken</code> ký; service <code>security</code> (PIN thật, KMS) làm sau</dd>
+            <dt>Test</dt><dd>Cursor không trùng, không sót khi có giao dịch mới chen vào giữa 2 trang; không xem được lịch sử người khác</dd>
+            <dt>Chống dò</dt><dd>Tra người nhận bị giới hạn số lần (làm ở Envoy rate limit, ghi chú trong code)</dd>
             <dt>Chi phí</dt><dd>$0, chạy local</dd>
           </dl>
         </article>
