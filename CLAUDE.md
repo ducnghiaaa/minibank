@@ -32,8 +32,9 @@ In the specs, **[user]** = decided by the user (do not change without asking),
   one step at a time: why → what to do → how to check → wait for their report. Add a short
   Vietnamese gloss only for hard terms. Documents for the faculty (`docs/thesis/`) stay in Vietnamese.
 - **Console first, then code.** For each new AWS resource: guide the user to build it by hand in
-  the console (a lab), then write Terraform and bring it in with an `import` block. The plan must
-  show `0 to add, 0 to destroy`. Ask first if a resource is impractical by hand.
+  the console (a lab) to practise, then **clean it up** (delete it, in the right order), then
+  write Terraform that builds it **from scratch**. No `import` by default — only when recreating
+  would break something or lose data (e.g. the hosted zone), and ask first.
 - **Claude writes, the user owns.** Claude writes the code; the user reviews, commits, pushes and
   merges. Never commit, push, merge, `terraform apply` or `destroy` — give the commands instead.
   Read-only checks (`git status`, `terraform plan`, `aws ... describe/list/get`) are fine.

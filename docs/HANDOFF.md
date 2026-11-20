@@ -53,8 +53,9 @@ modules/state-bucket
 ## How we work
 
 1. **Console first (lab):** build the resource by hand, step by step: why → do → check.
-2. **Then code:** Claude writes Terraform, the user imports it with an `import` block.
-3. **Plan must be clean:** `0 to add, 0 to destroy`. Only expected tag changes.
+2. **Cleanup:** delete what you built, in the right order (learn the dependencies).
+3. **Then code:** Claude writes Terraform that builds it from scratch; plan shows only `add`.
+   `import` only as an exception, when recreating would break things (the `dns` zone).
 4. Claude writes code; the user reviews, commits, pushes, and merges. One small PR per stack.
 
 ## Lessons learned

@@ -1,11 +1,12 @@
 ---
 name: aws-lab
-description: Guide the user to build a new AWS resource by hand in the console, step by step, before it is written in Terraform. Use when starting any new minibank infra piece (VPC, subnets, KMS, Aurora, ...) or when the user says "lab".
+description: Guide the user to build a new AWS resource by hand in the console, step by step, then clean it up, before it is written in Terraform. Use when starting any new minibank infra piece (VPC, subnets, KMS, Aurora, ...) or when the user says "lab".
 ---
 
 # Console lab
 
-The user builds it by hand first, to learn the console. Terraform comes after (see `codify`).
+The user builds it by hand first, to practise the console, then deletes it. Terraform then
+builds it from scratch (see `codify`).
 
 ## Before step 1
 
@@ -35,4 +36,8 @@ the next step. If something differs, explain why and how to fix it before moving
 - Do not let the user create anything billed per hour without saying so first.
 - Note every console default that Terraform sets differently (comments, tags, flags) —
   `codify` needs this list.
-- At the end: summarise what was built (IDs), then offer `codify`.
+- At the end: summarise what was built, then run a **cleanup** lab: delete everything in
+  dependency order (explain why each thing must go before the next), and verify with CLI that
+  nothing is left. Then offer `codify`.
+- Exception: if recreating would break something or lose data (e.g. a hosted zone and its NS),
+  do not clean up — ask the user, and `codify` imports it instead.
