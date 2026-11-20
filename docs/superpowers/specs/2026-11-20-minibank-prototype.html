@@ -189,6 +189,24 @@ input {
 pre.tree { margin: 0; background: var(--surface-2); border-radius: 10px; padding: 12px; font-family: var(--font-mono); font-size: 0.78rem; overflow-x: auto; line-height: 1.5; }
 .note { background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; font-size: 0.9rem; }
 section[hidden] { display: none; }
+.diagram .edge.dash { stroke-dasharray: 6 5; }
+.diagram .edge.fail { stroke: var(--danger); }
+.diagram .arrowhead.fail { fill: var(--danger); }
+.diagram .lbl { font-size: 11.5px; fill: var(--fg); }
+.diagram .lbl.fail { fill: var(--danger); }
+.diagram .rmq { font-size: 10.5px; fill: var(--accent); font-weight: 600; }
+.diagram .step circle { fill: var(--next); }
+.diagram .step text { fill: var(--surface); font-size: 12px; font-weight: 700; }
+.diagram .callout { fill: var(--surface-2); stroke: var(--line); }
+.diagram .n.lab rect { fill: var(--surface); stroke: var(--accent); }
+.diagram .n.ghost rect { fill: none; stroke: var(--todo); stroke-dasharray: 5 4; }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.steps li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.steps .num { width: 26px; height: 26px; border-radius: 50%; background: var(--next); color: var(--surface); font-weight: 700; display: grid; place-items: center; font-size: 0.85rem; }
+.steps p { font-size: 0.9rem; }
+.map { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.map div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: 0.88rem; display: grid; gap: 2px; }
+.map b { font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .toast { animation: drop .25s ease-out; }
   @keyframes drop { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -206,6 +224,7 @@ section[hidden] { display: none; }
     <a href="#app" id="tab-app" role="tab" aria-selected="true">App</a>
     <a href="#infra" id="tab-infra" role="tab" aria-selected="false">Hạ tầng</a>
     <a href="#next" id="tab-next" role="tab" aria-selected="false">Việc sắp làm</a>
+    <a href="#lab" id="tab-lab" role="tab" aria-selected="false">Lab SNS/SQS</a>
   </nav>
 
   <!-- APP -->
@@ -382,6 +401,135 @@ section[hidden] { display: none; }
             <dt>Chi phí</dt><dd>$0, chạy local</dd>
           </dl>
         </article>
+      </div>
+    </div>
+  </section>
+  <!-- LAB SNS/SQS -->
+  <section id="view-lab" role="tabpanel" aria-labelledby="tab-lab" hidden>
+    <div class="wrap">
+      <p class="note">Bản xem trước lab <code>messaging</code>. Số tròn màu cam là thứ tự các bước lab. Chữ xanh nhỏ là thứ tương đương trong RabbitMQ. Đường đỏ là đường đi khi xử lý lỗi.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 1000 600" role="img" aria-label="Sơ đồ lab SNS, SQS và DLQ">
+          <defs>
+            <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead" d="M0,0 L10,5 L0,10 z"/></marker>
+            <marker id="arrowf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arrowhead fail" d="M0,0 L10,5 L0,10 z"/></marker>
+          </defs>
+
+          <!-- publisher -->
+          <g class="n lab"><rect x="16" y="196" width="160" height="96"/>
+            <text x="96" y="222" text-anchor="middle" font-weight="600">Publisher</text>
+            <text class="small" x="96" y="242" text-anchor="middle">Lab: console</text>
+            <text class="small" x="96" y="256" text-anchor="middle">"Publish message"</text>
+            <text class="small" x="96" y="276" text-anchor="middle">Sau này: outbox của account</text></g>
+
+          <!-- SNS -->
+          <g class="n lab"><rect x="236" y="186" width="200" height="116"/>
+            <text x="336" y="212" text-anchor="middle" font-weight="600">SNS topic</text>
+            <text class="small mono" x="336" y="232" text-anchor="middle">minibank-lab-transactions</text>
+            <text class="small" x="336" y="254" text-anchor="middle">Đẩy (push) cho mọi subscriber</text>
+            <text class="small" x="336" y="270" text-anchor="middle">Không lưu message</text>
+            <text class="rmq" x="336" y="290" text-anchor="middle">≈ fanout exchange</text></g>
+          <g class="step"><circle cx="246" cy="186" r="12"/><text x="246" y="190" text-anchor="middle">2</text></g>
+
+          <!-- SQS main -->
+          <g class="n lab"><rect x="510" y="160" width="240" height="168"/>
+            <text x="630" y="186" text-anchor="middle" font-weight="600">SQS queue</text>
+            <text class="small mono" x="630" y="206" text-anchor="middle">minibank-lab-notification</text>
+            <text class="small" x="526" y="232">Visibility timeout: 30 giây</text>
+            <text class="small" x="526" y="250">Giữ message: 4 ngày</text>
+            <text class="small" x="526" y="268">Long polling: đợi tối đa 20 giây</text>
+            <text class="small" x="526" y="286">Mã hoá: SSE-SQS (miễn phí)</text>
+            <text class="small" x="526" y="304">DLQ sau 5 lần nhận</text>
+            <text class="rmq" x="630" y="320" text-anchor="middle">≈ queue</text></g>
+          <g class="step"><circle cx="520" cy="160" r="12"/><text x="520" y="164" text-anchor="middle">1</text></g>
+
+          <!-- queue policy callout -->
+          <rect class="callout" x="510" y="70" width="240" height="56" rx="8"/>
+          <text class="lbl" x="522" y="92" font-weight="600">Queue policy</text>
+          <text class="small" x="522" y="110">Chỉ topic này được gửi (SendMessage)</text>
+          <path class="edge dash" d="M630,126 L630,158" marker-end="url(#arrow2)"/>
+
+          <!-- consumer -->
+          <g class="n lab"><rect x="826" y="186" width="160" height="116"/>
+            <text x="906" y="212" text-anchor="middle" font-weight="600">Consumer</text>
+            <text class="small" x="906" y="234" text-anchor="middle">Lab: console</text>
+            <text class="small" x="906" y="248" text-anchor="middle">"Poll for messages"</text>
+            <text class="small" x="906" y="270" text-anchor="middle">Sau này: service</text>
+            <text class="small" x="906" y="284" text-anchor="middle">notification</text></g>
+          <g class="step"><circle cx="836" cy="186" r="12"/><text x="836" y="190" text-anchor="middle">4</text></g>
+
+          <!-- DLQ -->
+          <g class="n lab"><rect x="510" y="450" width="240" height="100"/>
+            <text x="630" y="476" text-anchor="middle" font-weight="600">DLQ (cũng là SQS)</text>
+            <text class="small mono" x="630" y="496" text-anchor="middle">minibank-lab-notification-dlq</text>
+            <text class="small" x="630" y="518" text-anchor="middle">Giữ 14 ngày để xem lỗi</text>
+            <text class="rmq" x="630" y="538" text-anchor="middle">≈ DLX + dead-letter queue</text></g>
+          <g class="step"><circle cx="520" cy="450" r="12"/><text x="520" y="454" text-anchor="middle">1</text></g>
+
+          <!-- phase 2 queue -->
+          <g class="n ghost"><rect x="236" y="450" width="200" height="80"/>
+            <text class="small" x="336" y="480" text-anchor="middle">SQS assistant</text>
+            <text class="small" x="336" y="500" text-anchor="middle">đợt 2 · không làm trong lab</text>
+            <text class="small" x="336" y="516" text-anchor="middle">thêm queue, không sửa code</text></g>
+
+          <!-- happy path -->
+          <path class="edge" d="M176,244 L234,244" marker-end="url(#arrow2)"/>
+          <text class="lbl" x="205" y="236" text-anchor="middle">Publish</text>
+
+          <path class="edge" d="M436,244 L508,244" marker-end="url(#arrow2)"/>
+          <text class="lbl" x="472" y="232" text-anchor="middle">subscription</text>
+          <text class="small" x="472" y="264" text-anchor="middle">raw delivery</text>
+          <text class="rmq" x="472" y="280" text-anchor="middle">≈ binding</text>
+          <g class="step"><circle cx="472" cy="212" r="12"/><text x="472" y="216" text-anchor="middle">3</text></g>
+
+          <path class="edge" d="M750,214 L824,214" marker-end="url(#arrow2)"/>
+          <text class="lbl" x="787" y="204" text-anchor="middle">① Receive</text>
+          <text class="small" x="787" y="228" text-anchor="middle">(kéo, pull)</text>
+          <path class="edge" d="M824,272 L752,272" marker-end="url(#arrow2)"/>
+          <text class="lbl" x="788" y="262" text-anchor="middle">② Delete</text>
+          <text class="small" x="788" y="288" text-anchor="middle">= ack</text>
+
+          <!-- fan-out dashed to phase 2 -->
+          <path class="edge dash" d="M336,302 L336,448" marker-end="url(#arrow2)"/>
+          <text class="small" x="346" y="380">fan-out: 1 message</text>
+          <text class="small" x="346" y="394">tới nhiều queue</text>
+
+          <!-- failure loop -->
+          <path class="edge fail" d="M906,302 L906,380 L760,380" marker-end="url(#arrowf)"/>
+          <text class="lbl fail" x="772" y="326">Crash / không Delete:</text>
+          <text class="lbl fail" x="772" y="342">message bị ẩn 30 giây</text>
+          <text class="lbl fail" x="772" y="358">rồi hiện lại</text>
+          <text class="lbl fail" x="770" y="400">receiveCount + 1</text>
+          <g class="step"><circle cx="906" cy="404" r="12"/><text x="906" y="408" text-anchor="middle">5</text></g>
+
+          <path class="edge fail" d="M690,328 L690,448" marker-end="url(#arrowf)"/>
+          <text class="lbl fail" x="700" y="420">nhận quá 5 lần</text>
+          <text class="lbl fail" x="700" y="436">→ chuyển sang DLQ</text>
+
+          <path class="edge dash" d="M570,448 L570,330" marker-end="url(#arrow2)"/>
+          <text class="small" x="578" y="388">redrive</text>
+          <text class="small" x="578" y="402">(sau khi sửa)</text>
+        </svg>
+      </div>
+
+      <h2>Các bước lab</h2>
+      <ol class="steps">
+        <li><span class="num">1</span><div><h3>Tạo 2 queue SQS</h3><p>DLQ <code>minibank-lab-notification-dlq</code> trước (giữ 14 ngày), rồi queue chính <code>minibank-lab-notification</code> (visibility 30 giây, giữ 4 ngày, long polling 20 giây, SSE-SQS, DLQ sau 5 lần nhận). DLQ phải có trước vì queue chính trỏ tới nó.</p></div></li>
+        <li><span class="num">2</span><div><h3>Tạo SNS topic</h3><p>Standard topic <code>minibank-lab-transactions</code>. Topic chỉ chuyển tiếp, không giữ message nào.</p></div></li>
+        <li><span class="num">3</span><div><h3>Subscribe queue vào topic</h3><p>Protocol SQS, bật raw message delivery (nhận đúng nội dung gốc, không bọc JSON của SNS). Console tự thêm queue policy cho phép topic gửi vào queue.</p></div></li>
+        <li><span class="num">4</span><div><h3>Publish và đọc message</h3><p>Publish một message mẫu từ topic, rồi "Poll for messages" ở queue. Xoá message = ack.</p></div></li>
+        <li><span class="num">5</span><div><h3>Thí nghiệm DLQ</h3><p>Publish thêm một message, poll 5 lần mà không xoá, mỗi lần đợi hết 30 giây. Lần thứ 6, message nằm ở DLQ, không còn ở queue chính.</p></div></li>
+        <li><span class="num">6</span><div><h3>Cleanup</h3><p>Xoá subscription, topic, queue chính, rồi DLQ. Sau đó Terraform dựng bản thật <code>minibank-dev-*</code>.</p></div></li>
+      </ol>
+
+      <h2>RabbitMQ → AWS</h2>
+      <div class="map">
+        <div><b>Exchange (fanout)</b><span>SNS topic</span></div>
+        <div><b>Binding</b><span>Subscription (+ filter policy)</span></div>
+        <div><b>Queue</b><span>SQS queue</span></div>
+        <div><b>ack</b><span>DeleteMessage</span></div>
+        <div><b>nack / requeue</b><span>Không xoá → hết visibility timeout thì hiện lại</span></div>
+        <div><b>DLX + dead-letter queue</b><span>DLQ + redrive policy (maxReceiveCount)</span></div>
       </div>
     </div>
   </section>
@@ -674,7 +822,7 @@ section[hidden] { display: none; }
   });
 
   // tabs
-  const tabs = ['app', 'infra', 'next'];
+  const tabs = ['app', 'infra', 'next', 'lab'];
   function showTab() {
     const h = (location.hash || '#app').slice(1);
     const name = tabs.includes(h) ? h : 'app';
