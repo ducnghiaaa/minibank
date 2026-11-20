@@ -27,6 +27,16 @@ services:
       postgres:
         condition: service_healthy
 
+  # fake Cognito: curl 'localhost:9000/token?sub=user-1&name=Nguyen+Van+An'
+  devtoken:
+    build:
+      context: .
+      dockerfile: cmd/devtoken/Dockerfile
+    environment:
+      ISSUER: http://localhost:9000
+    ports:
+      - "9000:9000"
+
   account:
     build:
       context: .
@@ -34,11 +44,15 @@ services:
     environment:
       PORT: "8080"
       DATABASE_URL: postgres://minibank:local-only@postgres:5432/account?sslmode=disable
+      AUTH_ISSUER: http://localhost:9000
+      AUTH_JWKS_URL: http://devtoken:9000/.well-known/jwks.json
     ports:
       - "8080:8080"
     depends_on:
       account-migrate:
         condition: service_completed_successfully
+      devtoken:
+        condition: service_started
 
 volumes:
   pgdata:
