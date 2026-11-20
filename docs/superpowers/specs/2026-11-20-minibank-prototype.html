@@ -262,7 +262,7 @@ section[hidden] { display: none; }
           <g class="n todo"><rect x="30" y="250" width="100" height="44"/><text x="80" y="277" text-anchor="middle">Browser</text></g>
           <g class="n todo"><rect x="160" y="240" width="110" height="64"/><text x="215" y="267" text-anchor="middle">CloudFront</text><text class="small" x="215" y="285" text-anchor="middle">bank.</text></g>
           <g class="n todo"><rect x="160" y="70" width="110" height="64"/><text x="215" y="97" text-anchor="middle">S3 SPA</text><text class="small" x="215" y="115" text-anchor="middle">frontend</text></g>
-          <g class="n todo"><rect x="30" y="70" width="110" height="64"/><text x="85" y="97" text-anchor="middle">Cognito</text><text class="small" x="85" y="115" text-anchor="middle">auth.</text></g>
+          <g class="n next"><rect x="30" y="70" width="110" height="64"/><text x="85" y="97" text-anchor="middle">Cognito</text><text class="small" x="85" y="115" text-anchor="middle">auth.</text></g>
           <g class="n done"><rect x="30" y="440" width="110" height="64"/><text x="85" y="467" text-anchor="middle">Route 53</text><text class="small" x="85" y="485" text-anchor="middle">andrewnguyen.cloud</text></g>
           <g class="n todo"><rect x="160" y="440" width="110" height="64"/><text x="215" y="467" text-anchor="middle">ACM certs</text><text class="small" x="215" y="485" text-anchor="middle">us-east-1 + SG</text></g>
 
@@ -294,7 +294,7 @@ section[hidden] { display: none; }
           <text class="zone-label" x="804" y="32">DỊCH VỤ VÙNG</text>
           <g class="n done"><rect x="805" y="50" width="150" height="56"/><text x="880" y="74" text-anchor="middle">ECR</text><text class="small" x="880" y="92" text-anchor="middle">image mỗi service</text></g>
           <g class="n todo"><rect x="805" y="122" width="150" height="56"/><text x="880" y="146" text-anchor="middle">KMS</text><text class="small" x="880" y="164" text-anchor="middle">khoá ký + pepper</text></g>
-          <g class="n next"><rect x="805" y="194" width="150" height="56"/><text x="880" y="218" text-anchor="middle">SNS → SQS</text><text class="small" x="880" y="236" text-anchor="middle">transactions + DLQ</text></g>
+          <g class="n done"><rect x="805" y="194" width="150" height="56"/><text x="880" y="218" text-anchor="middle">SNS → SQS</text><text class="small" x="880" y="236" text-anchor="middle">transactions + DLQ</text></g>
           <g class="n todo"><rect x="805" y="266" width="150" height="56"/><text x="880" y="290" text-anchor="middle">Secrets Manager</text><text class="small" x="880" y="308" text-anchor="middle">qua External Secrets</text></g>
           <g class="n done"><rect x="805" y="338" width="150" height="56"/><text x="880" y="362" text-anchor="middle">CI OIDC roles</text><text class="small" x="880" y="380" text-anchor="middle">tf-plan, tf-apply</text></g>
           <g class="n todo"><rect x="805" y="410" width="150" height="56"/><text x="880" y="434" text-anchor="middle">Grafana Cloud</text><text class="small" x="880" y="452" text-anchor="middle">metric, log, alert</text></g>
@@ -323,8 +323,8 @@ section[hidden] { display: none; }
             <li><i class="dot done"></i><span><code>dns</code> — hosted zone</span></li>
             <li><i class="dot done"></i><span><code>network</code> — VPC, subnet, S3 endpoint</span></li>
             <li><i class="dot done"></i><span><code>registry</code> — ECR</span></li>
-            <li><i class="dot next"></i><span><code>messaging</code> — SNS/SQS</span></li>
-            <li><i class="dot todo"></i><span><code>identity</code> — Cognito</span></li>
+            <li><i class="dot done"></i><span><code>messaging</code> — SNS/SQS</span></li>
+            <li><i class="dot next"></i><span><code>identity</code> — Cognito</span></li>
             <li><i class="dot todo"></i><span><code>data</code> — KMS, Aurora, Secrets</span></li>
             <li><i class="dot todo"></i><span><code>edge</code> — ACM, S3, CloudFront</span></li>
             <li><i class="dot todo"></i><span>IAM role cho workload, CI role</span></li>
@@ -344,8 +344,9 @@ section[hidden] { display: none; }
           <ul>
             <li><i class="dot done"></i><span>Chạy local: <code>compose.yaml</code> (PR 1)</span></li>
             <li><i class="dot done"></i><span><code>account</code> PR 2 — schema sổ cái</span></li>
-            <li><i class="dot next"></i><span><code>account</code> PR 3 — mở tài khoản, ghi sổ</span></li>
-            <li><i class="dot todo"></i><span><code>account</code> PR 4–5 — chuyển tiền, lịch sử</span></li>
+            <li><i class="dot done"></i><span><code>account</code> PR 3 — mở tài khoản, ghi sổ</span></li>
+            <li><i class="dot next"></i><span><code>account</code> PR 4 — chuyển tiền</span></li>
+            <li><i class="dot todo"></i><span><code>account</code> PR 5 — tra người nhận, lịch sử</span></li>
             <li><i class="dot todo"></i><span><code>security</code> — PIN, token</span></li>
             <li><i class="dot todo"></i><span><code>notification</code> — WebSocket</span></li>
             <li><i class="dot todo"></i><span><code>frontend</code> — React</span></li>
@@ -363,43 +364,42 @@ section[hidden] { display: none; }
       <div class="previews">
         <article class="preview">
           <p class="tag">Hướng A · Hạ tầng</p>
-          <h2><code>messaging</code> — SNS → SQS</h2>
-          <p>Đường đi sự kiện: <code>account</code> ghi outbox → SNS topic <code>transactions</code> → SQS <code>notification</code> → service <code>notification</code>. Message lỗi 5 lần chuyển sang DLQ.</p>
+          <h2><code>identity</code> — Cognito</h2>
+          <p>Đăng ký, đăng nhập cho khách. Cognito phát access token (JWT), service <code>account</code> kiểm token bằng JWKS của user pool, giống hệt <code>devtoken</code> đang làm ở local.</p>
           <div class="tbl"><table>
             <tr><th>Tài nguyên</th><th>Cấu hình</th></tr>
-            <tr><td>SNS <code>minibank-dev-transactions</code></td><td>Standard topic, mã hoá SSE bằng khoá AWS quản</td></tr>
-            <tr><td>SQS <code>minibank-dev-notification</code></td><td>Raw message delivery, giữ 4 ngày, SSE-SQS</td></tr>
-            <tr><td>SQS <code>minibank-dev-notification-dlq</code></td><td>Redrive sau 5 lần nhận, giữ 14 ngày</td></tr>
-            <tr><td>Queue policy + subscription</td><td>Chỉ topic <code>transactions</code> được gửi vào queue</td></tr>
+            <tr><td>User pool <code>minibank-dev</code></td><td>Tier Essentials (cần cho Managed Login), đăng nhập bằng email, thuộc tính <code>name</code> bắt buộc</td></tr>
+            <tr><td>App client <code>web</code></td><td>Authorization code + PKCE, không có client secret (SPA chạy trên trình duyệt)</td></tr>
+            <tr><td>App client <code>e2e-test</code></td><td>Cho phép <code>ADMIN_USER_PASSWORD_AUTH</code>, chỉ dùng cho script test</td></tr>
+            <tr><td>Domain Managed Login</td><td>Tạm dùng domain prefix của Cognito; <code>auth.andrewnguyen.cloud</code> làm sau cùng stack <code>edge</code> (cần ACM ở us-east-1)</td></tr>
           </table></div>
           <dl class="kv">
-            <dt>Lab console</dt><dd>Tạo topic + queue + DLQ, subscribe, publish thử 1 message, đọc từ queue; nhận 5 lần không xoá để thấy message rơi vào DLQ; rồi cleanup</dd>
-            <dt>Terraform</dt><dd>Resource thuần, plan dự kiến khoảng <code>6 to add</code></dd>
-            <dt>Chi phí</dt><dd>Free tier 1 triệu request/tháng mỗi dịch vụ ≈ $0 ở mức demo</dd>
-            <dt>SAA</dt><dd>Domain 2: decouple bằng SQS, fan-out SNS → SQS, DLQ; Domain 1: queue policy, mã hoá</dd>
+            <dt>Lab console</dt><dd>Tạo user pool, đăng ký 1 user qua trang Managed Login, lấy token, giải mã JWT xem <code>sub</code>, <code>token_use</code>, <code>iss</code>; so với token của <code>devtoken</code>; rồi cleanup</dd>
+            <dt>Terraform</dt><dd>Resource thuần, plan dự kiến khoảng 4–5 resource</dd>
+            <dt>Chi phí</dt><dd>Gần $0 ở mức demo (nằm trong free tier theo số người dùng hoạt động/tháng). Kiểm lại trang giá trước khi tạo</dd>
+            <dt>SAA</dt><dd>Domain 1: Cognito user pool vs identity pool, OAuth2/OIDC, JWT</dd>
           </dl>
         </article>
         <article class="preview">
           <p class="tag">Hướng B · App</p>
-          <h2><code>account</code> PR 3 — mở tài khoản + hàm ghi sổ</h2>
-          <p>Lần đầu khách gọi <code>GET /accounts/me</code>, service tạo tài khoản và tặng 10.000.000đ từ <code>BANK_FUNDING</code>. Mọi thay đổi số dư đi qua một hàm ghi sổ duy nhất.</p>
-<pre class="tree">internal/platform/auth/     middleware kiểm JWT (issuer, JWKS cấu hình được)
-services/account/internal/
-  ledger/post.go           ghi sổ: khoá balances theo account_id tăng dần,
-                           kiểm tổng postings = 0, ghi outbox
-  accounts/open.go         tạo lười theo sub, số TK 10 số có Luhn
-  api/me.go                GET /accounts/me
-cmd/devtoken/              phát JWT giả để chạy local (không cần Cognito)</pre>
+          <h2><code>account</code> PR 4 — chuyển tiền</h2>
+          <p><code>POST /transfers</code> theo đúng thuật toán spec §5.2, trong một transaction Postgres. Đây là phần quan trọng nhất của ngân hàng: không mất tiền, không nhân đôi tiền.</p>
+<pre class="tree">services/account/internal/
+  transfers/transfer.go     idempotency → kiểm token giao dịch → chống replay
+                            → khoá → kiểm số dư + hạn mức → ledger.Post
+  api/transfers.go          POST /transfers (header Idempotency-Key,
+                            X-Transaction-Token)
+cmd/devtoken/               thêm token giao dịch ES256 (thay security tạm thời)</pre>
           <div class="tbl"><table>
-            <tr><th>Quy tắc</th><th>Kiểm bằng test</th></tr>
-            <tr><td>Một <code>sub</code> chỉ có một tài khoản; gọi nhiều lần không tặng tiền 2 lần</td><td>10 request song song → đúng 1 tài khoản, 1 giao dịch OPENING</td></tr>
-            <tr><td>Tổng <code>postings</code> của mỗi giao dịch = 0</td><td>Bất biến kiểm sau mỗi test</td></tr>
-            <tr><td>Tổng số dư toàn hệ thống = 0 (tính cả BANK_FUNDING âm)</td><td>Bất biến kiểm sau mỗi test</td></tr>
-            <tr><td>Không có JWT hợp lệ → 401</td><td>Test middleware với issuer giả</td></tr>
+            <tr><th>Tình huống</th><th>Kết quả mong đợi (có test)</th></tr>
+            <tr><td>Gửi lại cùng <code>Idempotency-Key</code>, cùng nội dung</td><td>200, trả lại kết quả cũ, không trừ tiền lần 2</td></tr>
+            <tr><td>Cùng key, nội dung khác</td><td>409</td></tr>
+            <tr><td>Dùng lại token giao dịch (cùng <code>jti</code>)</td><td>Từ chối</td></tr>
+            <tr><td>Số tiền ngoài 1.000đ–50.000.000đ, vượt 100.000.000đ/ngày, chuyển cho chính mình</td><td>400 / 422</td></tr>
+            <tr><td>A→B và B→A cùng lúc, nhiều lần</td><td>Không deadlock, bất biến tổng = 0</td></tr>
           </table></div>
           <dl class="kv">
-            <dt>Tạm thời</dt><dd>Tên hiển thị lấy từ claim <code>name</code> của JWT; gọi Cognito <code>userInfo</code> làm khi có Cognito thật</dd>
-            <dt>Thư viện</dt><dd>Chọn thư viện JWT/JWKS lúc viết code, bản ≥ 2 tuần tuổi</dd>
+            <dt>Tạm thời</dt><dd>Token giao dịch do <code>devtoken</code> ký; service <code>security</code> (PIN thật, KMS) làm sau</dd>
             <dt>Chi phí</dt><dd>$0, chạy local</dd>
           </dl>
         </article>
@@ -409,7 +409,7 @@ cmd/devtoken/              phát JWT giả để chạy local (không cần Cogn
   <!-- LAB SNS/SQS -->
   <section id="view-lab" role="tabpanel" aria-labelledby="tab-lab" hidden>
     <div class="wrap">
-      <p class="note">Bản xem trước lab <code>messaging</code>. Số tròn màu cam là thứ tự các bước lab. Chữ xanh nhỏ là thứ tương đương trong RabbitMQ. Đường đỏ là đường đi khi xử lý lỗi.</p>
+      <p class="note"><b>Đã xong 20/11:</b> lab, cleanup và Terraform (PR #5). Bản xem trước lab <code>messaging</code>. Số tròn màu cam là thứ tự các bước lab. Chữ xanh nhỏ là thứ tương đương trong RabbitMQ. Đường đỏ là đường đi khi xử lý lỗi.</p>
       <div class="diagram">
         <svg viewBox="0 0 1000 600" role="img" aria-label="Sơ đồ lab SNS, SQS và DLQ">
           <defs>
