@@ -343,7 +343,9 @@ section[hidden] { display: none; }
           <h3>App · repo minibank</h3>
           <ul>
             <li><i class="dot done"></i><span>Chạy local: <code>compose.yaml</code> (PR 1)</span></li>
-            <li><i class="dot next"></i><span><code>account</code> — PR 2: schema sổ cái</span></li>
+            <li><i class="dot done"></i><span><code>account</code> PR 2 — schema sổ cái</span></li>
+            <li><i class="dot next"></i><span><code>account</code> PR 3 — mở tài khoản, ghi sổ</span></li>
+            <li><i class="dot todo"></i><span><code>account</code> PR 4–5 — chuyển tiền, lịch sử</span></li>
             <li><i class="dot todo"></i><span><code>security</code> — PIN, token</span></li>
             <li><i class="dot todo"></i><span><code>notification</code> — WebSocket</span></li>
             <li><i class="dot todo"></i><span><code>frontend</code> — React</span></li>
@@ -379,25 +381,25 @@ section[hidden] { display: none; }
         </article>
         <article class="preview">
           <p class="tag">Hướng B · App</p>
-          <h2><code>account</code> PR 2 — schema sổ cái</h2>
-          <p>Tạo bảng cho sổ cái ghi kép và lệnh migrate chạy riêng (sau này là Job <code>PreSync</code> của ArgoCD). Chưa có logic chuyển tiền — đó là PR 3.</p>
-<pre class="tree">services/account/
-  cmd/account/main.go       thêm lệnh: account migrate
-  migrations/
-    0001_ledger.sql         accounts, balances, transactions,
-                            postings, used_jti, outbox
-    0002_seed.sql           BANK_FUNDING + merchant mẫu
-  internal/db/db.go         pool pgx, ping cho /readyz</pre>
+          <h2><code>account</code> PR 3 — mở tài khoản + hàm ghi sổ</h2>
+          <p>Lần đầu khách gọi <code>GET /accounts/me</code>, service tạo tài khoản và tặng 10.000.000đ từ <code>BANK_FUNDING</code>. Mọi thay đổi số dư đi qua một hàm ghi sổ duy nhất.</p>
+<pre class="tree">internal/platform/auth/     middleware kiểm JWT (issuer, JWKS cấu hình được)
+services/account/internal/
+  ledger/post.go           ghi sổ: khoá balances theo account_id tăng dần,
+                           kiểm tổng postings = 0, ghi outbox
+  accounts/open.go         tạo lười theo sub, số TK 10 số có Luhn
+  api/me.go                GET /accounts/me
+cmd/devtoken/              phát JWT giả để chạy local (không cần Cognito)</pre>
           <div class="tbl"><table>
-            <tr><th>Quy tắc trong schema</th><th>Vì sao</th></tr>
-            <tr><td><code>CHECK (allow_negative OR balance &gt;= 0)</code></td><td>Số dư khách không bao giờ âm, kể cả khi code lỗi</td></tr>
-            <tr><td>unique (<code>initiator_account_id</code>, <code>idempotency_key</code>)</td><td>Gửi trùng không trừ tiền 2 lần</td></tr>
-            <tr><td><code>balances</code> tách khỏi <code>accounts</code></td><td>Khoá hàng hẹp nhất khi chuyển tiền</td></tr>
-            <tr><td>Tiền là <code>BIGINT</code> VND</td><td>Không dùng số thực, không sai số làm tròn</td></tr>
+            <tr><th>Quy tắc</th><th>Kiểm bằng test</th></tr>
+            <tr><td>Một <code>sub</code> chỉ có một tài khoản; gọi nhiều lần không tặng tiền 2 lần</td><td>10 request song song → đúng 1 tài khoản, 1 giao dịch OPENING</td></tr>
+            <tr><td>Tổng <code>postings</code> của mỗi giao dịch = 0</td><td>Bất biến kiểm sau mỗi test</td></tr>
+            <tr><td>Tổng số dư toàn hệ thống = 0 (tính cả BANK_FUNDING âm)</td><td>Bất biến kiểm sau mỗi test</td></tr>
+            <tr><td>Không có JWT hợp lệ → 401</td><td>Test middleware với issuer giả</td></tr>
           </table></div>
           <dl class="kv">
-            <dt>Thư viện</dt><dd><code>pgx</code> v5 (driver Postgres), <code>goose</code> (migration SQL nhúng vào binary)</dd>
-            <dt>Kiểm thử</dt><dd>Test chạy với Postgres của <code>compose</code>: migrate lên/xuống, thử chèn số dư âm phải bị chặn</dd>
+            <dt>Tạm thời</dt><dd>Tên hiển thị lấy từ claim <code>name</code> của JWT; gọi Cognito <code>userInfo</code> làm khi có Cognito thật</dd>
+            <dt>Thư viện</dt><dd>Chọn thư viện JWT/JWKS lúc viết code, bản ≥ 2 tuần tuổi</dd>
             <dt>Chi phí</dt><dd>$0, chạy local</dd>
           </dl>
         </article>
