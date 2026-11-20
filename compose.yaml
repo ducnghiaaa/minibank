@@ -27,7 +27,7 @@ services:
       postgres:
         condition: service_healthy
 
-  # fake Cognito: curl 'localhost:9000/token?sub=user-1&name=Nguyen+Van+An'
+  # fake Cognito + fake security service (see cmd/devtoken)
   devtoken:
     build:
       context: .
@@ -46,6 +46,8 @@ services:
       DATABASE_URL: postgres://minibank:local-only@postgres:5432/account?sslmode=disable
       AUTH_ISSUER: http://localhost:9000
       AUTH_JWKS_URL: http://devtoken:9000/.well-known/jwks.json
+      TXN_ISSUER: http://localhost:9000/security
+      TXN_JWKS_URL: http://devtoken:9000/security/.well-known/jwks.json
     ports:
       - "8080:8080"
     depends_on:

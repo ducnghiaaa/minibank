@@ -48,27 +48,9 @@ func Post(ctx context.Context, tx pgx.Tx, e Entry) (int64, error) {
 		return 0, ErrUnbalanced
 	}
 
-	// lock in ascending account_id order so two opposite transfers never deadlock
-	ids := []int64{e.From, e.To}
-	slices.Sort(ids)
-	balances := make(map[int64]int64, 2)
-	rows, err := tx.Query(ctx,
-		`SELECT account_id, balance FROM balances WHERE account_id = ANY($1) ORDER BY account_id FOR UPDATE`, ids)
+	balances, err := Lock(ctx, tx, e.From, e.To)
 	if err != nil {
 		return 0, err
-	}
-	for rows.Next() {
-		var id, bal int64
-		if err := rows.Scan(&id, &bal); err != nil {
-			return 0, err
-		}
-		balances[id] = bal
-	}
-	if err := rows.Err(); err != nil {
-		return 0, err
-	}
-	if len(balances) != 2 {
-		return 0, fmt.Errorf("account not found")
 	}
 
 	var txID int64
@@ -102,6 +84,35 @@ func Post(ctx context.Context, tx pgx.Tx, e Entry) (int64, error) {
 		return 0, err
 	}
 	return txID, nil
+}
+
+// Lock takes row locks on the balances of ids, always in ascending account_id order,
+// so two opposite transfers never deadlock. Callers that must check something before
+// Post (e.g. a daily limit) lock first; Post locking again in the same tx is a no-op.
+func Lock(ctx context.Context, tx pgx.Tx, ids ...int64) (map[int64]int64, error) {
+	ids = slices.Clone(ids)
+	slices.Sort(ids)
+	rows, err := tx.Query(ctx,
+		`SELECT account_id, balance FROM balances WHERE account_id = ANY($1) ORDER BY account_id FOR UPDATE`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	balances := make(map[int64]int64, len(ids))
+	for rows.Next() {
+		var id, bal int64
+		if err := rows.Scan(&id, &bal); err != nil {
+			return nil, err
+		}
+		balances[id] = bal
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if len(balances) != len(slices.Compact(ids)) {
+		return nil, errors.New("account not found")
+	}
+	return balances, nil
 }
 
 // TransactionCompleted, app spec §7.1
