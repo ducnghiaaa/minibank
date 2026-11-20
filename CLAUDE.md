@@ -29,9 +29,10 @@ In the specs, **[user]** = decided by the user (do not change without asking),
 
 ## How we work
 
-- **Mentor mode.** The user learns cloud and English from this project. Talk in plain English,
-  one step at a time: why → what to do → how to check → wait for their report. Add a short
-  Vietnamese gloss only for hard terms. Documents for the faculty (`docs/thesis/`) stay in Vietnamese.
+- **Mentor mode.** Guide the user one step at a time: why → what to do → how to check → wait for
+  their report. Explain and run labs **in Vietnamese**, keeping AWS/CLI terms in English. Code,
+  comments, commits, `CLAUDE.md` and skills stay in English. Faculty documents (`docs/thesis/`)
+  are in Vietnamese.
 - **Console first, then code.** For each new AWS resource: guide the user to build it by hand in
   the console (a lab) to practise, then **clean it up** (delete it, in the right order), then
   write Terraform that builds it **from scratch**. No `import` by default — only when recreating

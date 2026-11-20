@@ -3,46 +3,19 @@ package db
 import (
 	"context"
 	"errors"
-	"fmt"
-	"net/url"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/ducnghiaaa/minibank/internal/platform/dbtest"
 )
 
-// testPool creates a fresh database for one test and drops it afterwards.
-// Needs TEST_DATABASE_URL (e.g. the compose Postgres); skips otherwise.
 func testPool(t *testing.T) *pgxpool.Pool {
-	t.Helper()
-	admin := os.Getenv("TEST_DATABASE_URL")
-	if admin == "" {
-		t.Skip("TEST_DATABASE_URL not set")
-	}
-	ctx := context.Background()
-
-	adminPool, err := Open(ctx, admin)
-	if err != nil {
+	pool := dbtest.New(t)
+	if err := pool.Ping(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	name := fmt.Sprintf("account_test_%d", time.Now().UnixNano())
-	if _, err := adminPool.Exec(ctx, "CREATE DATABASE "+name); err != nil {
-		t.Fatal(err)
-	}
-
-	u, _ := url.Parse(admin)
-	u.Path = "/" + name
-	pool, err := Open(ctx, u.String())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		pool.Close()
-		adminPool.Exec(ctx, "DROP DATABASE "+name)
-		adminPool.Close()
-	})
 	return pool
 }
 
