@@ -15,6 +15,18 @@ services:
       interval: 2s
       retries: 15
 
+  # one-shot, like the ArgoCD PreSync Job in the cluster
+  account-migrate:
+    build:
+      context: .
+      dockerfile: services/account/Dockerfile
+    command: ["migrate"]
+    environment:
+      DATABASE_URL: postgres://minibank:local-only@postgres:5432/account?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   account:
     build:
       context: .
@@ -25,8 +37,8 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
-        condition: service_healthy
+      account-migrate:
+        condition: service_completed_successfully
 
 volumes:
   pgdata:
