@@ -16,8 +16,11 @@ description: Update docs/HANDOFF.md with the current minibank status at the end 
    - Next steps: the exact step to resume (e.g. "network lab, step 2: subnets").
    - Lessons learned: only real surprises from this session, one or two lines each.
    - Remove cleanups that are done.
-3. **No secrets** — the repo is public. IDs and names are fine.
-4. **Running cost check:** list anything still running that costs money (EKS, NAT, Aurora
+3. **Update the prototype** `docs/superpowers/specs/2026-11-20-minibank-prototype.html`:
+   status colours in the infra diagram and stack lists, the "Việc sắp làm" previews, and the
+   App tab if a screen changed. Republish it to its claude.ai artifact.
+4. **No secrets** — the repo is public. IDs and names are fine.
+5. **Running cost check:** list anything still running that costs money (EKS, NAT, Aurora
    awake). If the cluster is up, remind the user to run `down`.
-5. Show the diff summary and give the commit command:
-   `git add docs/HANDOFF.md && git commit -m "docs: update handoff" && git push`
+6. Show the diff summary and give the commit command:
+   `git add docs/HANDOFF.md docs/superpowers/specs/2026-11-20-minibank-prototype.html && git commit -m "docs: update handoff" && git push`

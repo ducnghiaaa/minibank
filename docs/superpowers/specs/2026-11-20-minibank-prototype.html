@@ -1,0 +1,690 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>minibank Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* layout: header + tab bar; App tab = phone mock beside a spec panel; Infra tab = diagram + stack list + next-task previews */
+:root {
+  --bg: #f4f6f5;
+  --surface: #ffffff;
+  --surface-2: #eaefed;
+  --fg: #14201c;
+  --muted: #5b6b65;
+  --line: #d3dcd8;
+  --accent: #0f6b4f;
+  --accent-soft: #d8ece4;
+  --on-accent: #ffffff;
+  --done: #1f8a5b;
+  --done-soft: #dcf1e6;
+  --next: #b26a00;
+  --next-soft: #fbecd4;
+  --todo: #7a8681;
+  --todo-soft: #eceff0;
+  --danger: #b3261e;
+  --phone: #0e1714;
+  --font-body: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1412; --surface: #152019; --surface-2: #1c2a24; --fg: #e4ece8; --muted: #93a39c;
+    --line: #2a3a33; --accent: #4cc497; --accent-soft: #173a2d; --on-accent: #06281b;
+    --done: #4cc497; --done-soft: #173a2d; --next: #f0a73a; --next-soft: #3a2a12;
+    --todo: #8b9792; --todo-soft: #1f2a26; --danger: #ff8a80; --phone: #050908;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1412; --surface: #152019; --surface-2: #1c2a24; --fg: #e4ece8; --muted: #93a39c;
+  --line: #2a3a33; --accent: #4cc497; --accent-soft: #173a2d; --on-accent: #06281b;
+  --done: #4cc497; --done-soft: #173a2d; --next: #f0a73a; --next-soft: #3a2a12;
+  --todo: #8b9792; --todo-soft: #1f2a26; --danger: #ff8a80; --phone: #050908;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 24px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; line-height: 1.25; }
+h1 { font-size: 1.75rem; font-weight: 700; }
+h2 { font-size: 1.2rem; font-weight: 600; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.mono { font-family: var(--font-mono); font-size: 0.86em; }
+code { font-family: var(--font-mono); font-size: 0.85em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+header { display: grid; gap: 8px; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.75rem; font-weight: 600; color: var(--accent); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tabs a {
+  padding: 10px 16px; text-decoration: none; color: var(--muted); font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tabs a[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tabs a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* App tab */
+.app-grid { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 32px; align-items: start; }
+@media (max-width: 820px) { .app-grid { grid-template-columns: minmax(0, 1fr); } }
+.phone {
+  width: 100%; max-width: 360px; justify-self: center; background: var(--phone); border-radius: 36px; padding: 12px;
+}
+.screen {
+  background: var(--surface); color: var(--fg); border-radius: 26px; min-height: 620px; overflow: hidden;
+  display: flex; flex-direction: column; position: relative;
+}
+.bar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 8px; font-size: 0.8rem; color: var(--muted); }
+.view { padding: 8px 18px 18px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.back { background: none; border: 0; color: var(--accent); font: inherit; font-weight: 600; padding: 0; cursor: pointer; align-self: flex-start; }
+.balance-card { background: var(--accent); color: var(--on-accent); border-radius: 18px; padding: 18px; display: grid; gap: 6px; }
+.balance-card .amt { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.act {
+  background: var(--surface-2); border: 0; border-radius: 14px; padding: 12px 6px; font: inherit; font-size: 0.82rem; font-weight: 600;
+  color: var(--fg); cursor: pointer; display: grid; gap: 6px; justify-items: center;
+}
+.act svg { width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 1.8; }
+.btn {
+  background: var(--accent); color: var(--on-accent); border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 600; cursor: pointer;
+}
+.btn.ghost { background: var(--surface-2); color: var(--fg); }
+.btn[disabled] { opacity: 0.45; cursor: not-allowed; }
+label { font-size: 0.8rem; font-weight: 600; color: var(--muted); display: grid; gap: 4px; }
+input {
+  font: inherit; font-family: var(--font-mono); padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); color: var(--fg); width: 100%;
+}
+.hint { font-size: 0.78rem; color: var(--muted); }
+.err { font-size: 0.78rem; color: var(--danger); }
+.ok-name { font-size: 0.85rem; font-weight: 600; color: var(--done); }
+.txlist { list-style: none; margin: 0; padding: 0; display: grid; }
+.txlist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.txlist .who { font-weight: 600; font-size: 0.88rem; }
+.txlist .meta { font-size: 0.75rem; color: var(--muted); }
+.txlist .val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.txlist .bal { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); text-align: right; }
+.in { color: var(--done); }
+.out { color: var(--fg); }
+.pin-dots { display: flex; gap: 12px; justify-content: center; padding: 8px 0; }
+.pin-dots span { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--accent); }
+.pin-dots span.on { background: var(--accent); }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.keypad button {
+  font: inherit; font-family: var(--font-mono); font-size: 1.2rem; padding: 12px 0; border-radius: 12px; border: 0;
+  background: var(--surface-2); color: var(--fg); cursor: pointer;
+}
+.summary { background: var(--surface-2); border-radius: 12px; padding: 12px; display: grid; gap: 4px; font-size: 0.85rem; }
+.summary div { display: flex; justify-content: space-between; gap: 8px; }
+.summary b { font-family: var(--font-mono); font-weight: 600; }
+.success { display: grid; justify-items: center; gap: 10px; text-align: center; padding-top: 24px; }
+.success .check { width: 64px; height: 64px; border-radius: 50%; background: var(--done-soft); display: grid; place-items: center; }
+.success .check svg { width: 32px; height: 32px; stroke: var(--done); fill: none; stroke-width: 2.5; }
+.merchants { display: grid; gap: 8px; }
+.merchant { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; font: inherit; color: var(--fg); text-align: left; }
+.chip { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.toast {
+  position: absolute; left: 12px; right: 12px; top: 44px; background: var(--fg); color: var(--bg); border-radius: 14px; padding: 12px 14px;
+  font-size: 0.85rem; display: grid; gap: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.25);
+}
+.cognito { border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.cognito .url { font-family: var(--font-mono); font-size: 0.72rem; color: var(--muted); }
+.bell { position: relative; background: none; border: 0; cursor: pointer; padding: 0; color: var(--fg); }
+.bell svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+.bell .badge { position: absolute; top: -4px; right: -6px; background: var(--danger); color: #fff; font-size: 0.65rem; border-radius: 99px; padding: 0 5px; }
+.home-top { display: flex; justify-content: space-between; align-items: center; }
+
+.panel { display: grid; gap: 16px; min-width: 0; }
+.panel .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.kv { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 8px 14px; font-size: 0.9rem; }
+.kv dt { color: var(--muted); font-weight: 600; }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.rules { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 0.9rem; }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; }
+.flow button {
+  font: inherit; font-size: 0.8rem; padding: 6px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--fg); cursor: pointer;
+}
+.flow button[aria-current="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.svc { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 600; padding: 2px 8px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); }
+
+/* Infra tab */
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 0.85rem; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; border: 2px solid; }
+.dot.done { background: var(--done-soft); border-color: var(--done); }
+.dot.next { background: var(--next-soft); border-color: var(--next); }
+.dot.todo { background: var(--todo-soft); border-color: var(--todo); border-style: dashed; }
+.diagram { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.diagram svg { display: block; min-width: 860px; width: 100%; height: auto; }
+.diagram text { fill: var(--fg); font-family: var(--font-body); font-size: 13px; }
+.diagram .small { font-size: 11px; fill: var(--muted); }
+.diagram .zone { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.diagram .zone-label { font-size: 11px; font-weight: 600; fill: var(--muted); letter-spacing: 0.06em; }
+.diagram .n rect { stroke-width: 2; rx: 8; }
+.diagram .n.done rect { fill: var(--done-soft); stroke: var(--done); }
+.diagram .n.next rect { fill: var(--next-soft); stroke: var(--next); }
+.diagram .n.todo rect { fill: var(--todo-soft); stroke: var(--todo); stroke-dasharray: 5 4; }
+.diagram .vpc { fill: none; stroke: var(--done); stroke-width: 2; }
+.diagram .sub-done { fill: var(--done-soft); opacity: 0.45; }
+.diagram .edge { stroke: var(--muted); stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+.diagram .arrowhead { fill: var(--muted); }
+
+.stacks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.stack-group { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; }
+.stack-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 0.88rem; }
+.stack-group li { display: flex; gap: 8px; align-items: baseline; }
+.stack-group li .dot { flex: none; transform: translateY(1px); }
+
+.previews { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+.preview { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--next); border-radius: 14px; padding: 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.preview .tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--next); }
+.preview table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+.preview th, .preview td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.preview th { color: var(--muted); font-weight: 600; font-size: 0.78rem; }
+.tbl { overflow-x: auto; }
+pre.tree { margin: 0; background: var(--surface-2); border-radius: 10px; padding: 12px; font-family: var(--font-mono); font-size: 0.78rem; overflow-x: auto; line-height: 1.5; }
+.note { background: var(--accent-soft); border-radius: 12px; padding: 14px 16px; font-size: 0.9rem; }
+section[hidden] { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .toast { animation: drop .25s ease-out; }
+  @keyframes drop { from { transform: translateY(-12px); opacity: 0; } to { transform: none; opacity: 1; } }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Đồ án minibank · bản xem trước</p>
+    <h1>Prototype: app và hạ tầng sẽ trông như thế nào</h1>
+    <p class="muted">Bản mô phỏng để bạn xem trước. App chạy giả lập trong trình duyệt (không gọi API thật). Hạ tầng tô màu theo trạng thái ngày 20/11/2026.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <a href="#app" id="tab-app" role="tab" aria-selected="true">App</a>
+    <a href="#infra" id="tab-infra" role="tab" aria-selected="false">Hạ tầng</a>
+    <a href="#next" id="tab-next" role="tab" aria-selected="false">Việc sắp làm</a>
+  </nav>
+
+  <!-- APP -->
+  <section id="view-app" role="tabpanel" aria-labelledby="tab-app">
+    <div class="app-grid">
+      <div class="phone"><div class="screen" id="screen"></div></div>
+      <div class="panel">
+        <div class="card">
+          <div class="flow" id="flow" aria-label="Các màn hình"></div>
+        </div>
+        <div class="card" id="spec"></div>
+        <p class="note">Bấm thử trên điện thoại bên trái. Số liệu là dữ liệu mẫu. Các quy tắc ở khung bên phải lấy từ spec app (mục 4–7), phần nào chưa chốt thì bạn góp ý trước khi mình code.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- INFRA -->
+  <section id="view-infra" role="tabpanel" aria-labelledby="tab-infra" hidden>
+    <div class="wrap">
+      <div class="legend">
+        <span><i class="dot done"></i>Đã xong</span>
+        <span><i class="dot next"></i>Làm tiếp theo</span>
+        <span><i class="dot todo"></i>Chưa làm</span>
+      </div>
+      <div class="diagram">
+        <svg viewBox="0 0 980 560" role="img" aria-label="Sơ đồ kiến trúc minibank trên AWS">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path class="arrowhead" d="M0,0 L10,5 L0,10 z"/>
+            </marker>
+          </defs>
+          <!-- edge zone (global) -->
+          <rect class="zone" x="10" y="10" width="270" height="540" rx="12"/>
+          <text class="zone-label" x="24" y="32">EDGE · GLOBAL</text>
+          <g class="n todo"><rect x="30" y="250" width="100" height="44"/><text x="80" y="277" text-anchor="middle">Browser</text></g>
+          <g class="n todo"><rect x="160" y="240" width="110" height="64"/><text x="215" y="267" text-anchor="middle">CloudFront</text><text class="small" x="215" y="285" text-anchor="middle">bank.</text></g>
+          <g class="n todo"><rect x="160" y="70" width="110" height="64"/><text x="215" y="97" text-anchor="middle">S3 SPA</text><text class="small" x="215" y="115" text-anchor="middle">frontend</text></g>
+          <g class="n todo"><rect x="30" y="70" width="110" height="64"/><text x="85" y="97" text-anchor="middle">Cognito</text><text class="small" x="85" y="115" text-anchor="middle">auth.</text></g>
+          <g class="n done"><rect x="30" y="440" width="110" height="64"/><text x="85" y="467" text-anchor="middle">Route 53</text><text class="small" x="85" y="485" text-anchor="middle">andrewnguyen.cloud</text></g>
+          <g class="n todo"><rect x="160" y="440" width="110" height="64"/><text x="215" y="467" text-anchor="middle">ACM certs</text><text class="small" x="215" y="485" text-anchor="middle">us-east-1 + SG</text></g>
+
+          <!-- VPC -->
+          <rect class="vpc" x="300" y="10" width="470" height="540" rx="12"/>
+          <text class="zone-label" x="314" y="32">VPC minibank-dev · 10.0.0.0/16 · ĐÃ XONG</text>
+          <rect class="sub-done" x="312" y="44" width="446" height="104" rx="8"/>
+          <text class="zone-label" x="322" y="62">PUBLIC SUBNETS</text>
+          <rect class="sub-done" x="312" y="158" width="446" height="236" rx="8"/>
+          <text class="zone-label" x="322" y="176">PRIVATE SUBNETS · EKS</text>
+          <rect class="sub-done" x="312" y="404" width="446" height="136" rx="8"/>
+          <text class="zone-label" x="322" y="422">DB SUBNETS · chỉ route local</text>
+
+          <g class="n todo"><rect x="330" y="74" width="120" height="60"/><text x="390" y="100" text-anchor="middle">NLB</text><text class="small" x="390" y="118" text-anchor="middle">origin.</text></g>
+          <g class="n todo"><rect x="480" y="74" width="120" height="60"/><text x="540" y="100" text-anchor="middle">NAT fck-nat</text><text class="small" x="540" y="118" text-anchor="middle">ephemeral</text></g>
+          <g class="n done"><rect x="630" y="74" width="116" height="60"/><text x="688" y="100" text-anchor="middle">IGW</text><text class="small" x="688" y="118" text-anchor="middle">+ S3 endpoint</text></g>
+
+          <g class="n todo"><rect x="330" y="190" width="120" height="56"/><text x="390" y="214" text-anchor="middle">Envoy Gateway</text><text class="small" x="390" y="232" text-anchor="middle">JWT, rate limit</text></g>
+          <g class="n todo"><rect x="480" y="190" width="120" height="56"/><text x="540" y="214" text-anchor="middle">security</text><text class="small" x="540" y="232" text-anchor="middle">Go · PIN, token</text></g>
+          <g class="n todo"><rect x="630" y="190" width="116" height="56"/><text x="688" y="214" text-anchor="middle">account</text><text class="small" x="688" y="232" text-anchor="middle">Go · sổ cái</text></g>
+          <g class="n todo"><rect x="630" y="262" width="116" height="56"/><text x="688" y="286" text-anchor="middle">notification</text><text class="small" x="688" y="304" text-anchor="middle">Go · WebSocket</text></g>
+          <g class="n todo"><rect x="330" y="262" width="270" height="56"/><text x="465" y="286" text-anchor="middle">ArgoCD · Karpenter · ESO · LB Controller</text><text class="small" x="465" y="304" text-anchor="middle">add-ons qua GitOps</text></g>
+          <g class="n todo"><rect x="330" y="330" width="416" height="50"/><text x="538" y="352" text-anchor="middle">EKS · 1 node t4g.medium + Graviton Spot</text><text class="small" x="538" y="369" text-anchor="middle">bật khi làm, tắt lúc 01:00</text></g>
+
+          <g class="n todo"><rect x="430" y="444" width="210" height="76"/><text x="535" y="474" text-anchor="middle">Aurora PostgreSQL</text><text class="small" x="535" y="492" text-anchor="middle">Serverless v2 · 0–2 ACU</text><text class="small" x="535" y="508" text-anchor="middle">DB riêng mỗi service</text></g>
+
+          <!-- regional services -->
+          <rect class="zone" x="790" y="10" width="180" height="540" rx="12"/>
+          <text class="zone-label" x="804" y="32">DỊCH VỤ VÙNG</text>
+          <g class="n next"><rect x="805" y="50" width="150" height="56"/><text x="880" y="74" text-anchor="middle">ECR</text><text class="small" x="880" y="92" text-anchor="middle">image mỗi service</text></g>
+          <g class="n todo"><rect x="805" y="122" width="150" height="56"/><text x="880" y="146" text-anchor="middle">KMS</text><text class="small" x="880" y="164" text-anchor="middle">khoá ký + pepper</text></g>
+          <g class="n todo"><rect x="805" y="194" width="150" height="56"/><text x="880" y="218" text-anchor="middle">SNS → SQS</text><text class="small" x="880" y="236" text-anchor="middle">transactions + DLQ</text></g>
+          <g class="n todo"><rect x="805" y="266" width="150" height="56"/><text x="880" y="290" text-anchor="middle">Secrets Manager</text><text class="small" x="880" y="308" text-anchor="middle">qua External Secrets</text></g>
+          <g class="n done"><rect x="805" y="338" width="150" height="56"/><text x="880" y="362" text-anchor="middle">CI OIDC roles</text><text class="small" x="880" y="380" text-anchor="middle">tf-plan, tf-apply</text></g>
+          <g class="n todo"><rect x="805" y="410" width="150" height="56"/><text x="880" y="434" text-anchor="middle">Grafana Cloud</text><text class="small" x="880" y="452" text-anchor="middle">metric, log, alert</text></g>
+          <g class="n done"><rect x="805" y="482" width="150" height="56"/><text x="880" y="506" text-anchor="middle">Org · Budget · SCP</text><text class="small" x="880" y="524" text-anchor="middle">$40/tháng</text></g>
+
+          <!-- edges -->
+          <path class="edge" d="M130,272 L158,272"/>
+          <path class="edge" d="M215,240 L215,136"/>
+          <path class="edge" d="M270,262 C300,200 310,120 328,104"/>
+          <path class="edge" d="M390,134 L390,188"/>
+          <path class="edge" d="M450,218 L478,218"/>
+          <path class="edge" d="M600,218 L628,218"/>
+          <path class="edge" d="M746,218 L803,160"/>
+          <path class="edge" d="M746,290 L803,222"/>
+          <path class="edge" d="M688,246 L688,260"/>
+          <path class="edge" d="M688,318 C688,400 640,430 620,442"/>
+          <path class="edge" d="M80,250 L80,136"/>
+        </svg>
+      </div>
+
+      <div class="stacks">
+        <div class="stack-group">
+          <h3>Persistent · luôn giữ</h3>
+          <ul>
+            <li><i class="dot done"></i><span><code>ci-oidc</code> — đăng nhập CI không key</span></li>
+            <li><i class="dot done"></i><span><code>dns</code> — hosted zone</span></li>
+            <li><i class="dot done"></i><span><code>network</code> — VPC, subnet, S3 endpoint</span></li>
+            <li><i class="dot next"></i><span><code>registry</code> — ECR</span></li>
+            <li><i class="dot todo"></i><span><code>messaging</code> — SNS/SQS</span></li>
+            <li><i class="dot todo"></i><span><code>identity</code> — Cognito</span></li>
+            <li><i class="dot todo"></i><span><code>data</code> — KMS, Aurora, Secrets</span></li>
+            <li><i class="dot todo"></i><span><code>edge</code> — ACM, S3, CloudFront</span></li>
+            <li><i class="dot todo"></i><span>IAM role cho workload, CI role</span></li>
+          </ul>
+        </div>
+        <div class="stack-group">
+          <h3>Ephemeral · <code>up</code> / <code>down</code></h3>
+          <ul>
+            <li><i class="dot todo"></i><span><code>nat</code> — fck-nat t4g.nano</span></li>
+            <li><i class="dot todo"></i><span><code>eks</code> — cụm + node hệ thống</span></li>
+            <li><i class="dot todo"></i><span><code>addons-iam</code> — Pod Identity</span></li>
+            <li><i class="dot todo"></i><span><code>argocd-bootstrap</code></span></li>
+          </ul>
+        </div>
+        <div class="stack-group">
+          <h3>App · repo minibank</h3>
+          <ul>
+            <li><i class="dot next"></i><span>Chạy local: <code>compose.yaml</code></span></li>
+            <li><i class="dot next"></i><span><code>account</code> — sổ cái, chuyển tiền</span></li>
+            <li><i class="dot todo"></i><span><code>security</code> — PIN, token</span></li>
+            <li><i class="dot todo"></i><span><code>notification</code> — WebSocket</span></li>
+            <li><i class="dot todo"></i><span><code>frontend</code> — React</span></li>
+            <li><i class="dot todo"></i><span>CI app, GitOps, observability</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEXT -->
+  <section id="view-next" role="tabpanel" aria-labelledby="tab-next" hidden>
+    <div class="wrap">
+      <p class="note">Mỗi việc mới sẽ có một bản xem trước như dưới đây. Bạn duyệt (hoặc sửa) trước, mình mới làm.</p>
+      <div class="previews">
+        <article class="preview">
+          <p class="tag">Hướng A · Hạ tầng</p>
+          <h2><code>registry</code> — ECR</h2>
+          <p>Kho chứa image Docker cho 3 service. CI của app sẽ đẩy image vào đây, EKS kéo image ra.</p>
+          <div class="tbl"><table>
+            <tr><th>Tài nguyên</th><th>Cấu hình</th></tr>
+            <tr><td><code>minibank/security</code><br><code>minibank/account</code><br><code>minibank/notification</code></td><td>Tag bất biến (git SHA), scan on push (basic), mã hoá AES-256</td></tr>
+            <tr><td>Lifecycle policy</td><td>Giữ 20 image mới nhất mỗi repo</td></tr>
+          </table></div>
+          <dl class="kv">
+            <dt>Lab console</dt><dd>Tạo 1 repo bằng tay, đẩy thử 1 image, xem kết quả scan, rồi xoá</dd>
+            <dt>Terraform</dt><dd>Module <code>terraform-aws-modules/ecr</code>, plan dự kiến <code>6 to add</code> (3 repo + 3 lifecycle policy)</dd>
+            <dt>Chi phí</dt><dd>$0.10/GB/tháng lưu trữ; vài image ≈ dưới $0.10/tháng. Scan basic miễn phí</dd>
+            <dt>SAA</dt><dd>Domain 1 (bảo mật image, mã hoá) và 4 (lifecycle giảm chi phí)</dd>
+          </dl>
+        </article>
+        <article class="preview">
+          <p class="tag">Hướng B · App</p>
+          <h2>Chạy local + service <code>account</code></h2>
+          <p>Lõi ngân hàng: mở tài khoản, tra người nhận, chuyển tiền, lịch sử. Chạy hoàn toàn trên máy bằng Docker, không cần AWS.</p>
+<pre class="tree">minibank/
+  go.mod
+  compose.yaml              Postgres + account
+  internal/platform/        log, lỗi, middleware JWT
+  services/account/
+    cmd/account/main.go
+    internal/ledger/        sổ cái ghi kép
+    internal/api/           HTTP handler
+    migrations/             SQL schema + merchant mẫu</pre>
+          <div class="tbl"><table>
+            <tr><th>API</th><th>Làm gì</th></tr>
+            <tr><td class="mono">GET /accounts/me</td><td>Tài khoản của tôi (tạo lười, tặng 10.000.000đ)</td></tr>
+            <tr><td class="mono">GET /accounts/lookup</td><td>Tra tên người nhận, tên đã che</td></tr>
+            <tr><td class="mono">POST /transfers</td><td>Chuyển tiền, cần <code>Idempotency-Key</code></td></tr>
+            <tr><td class="mono">GET /transactions</td><td>Lịch sử, phân trang cursor</td></tr>
+          </table></div>
+          <dl class="kv">
+            <dt>Chia nhỏ</dt><dd>PR 1: khung repo + compose. PR 2: schema sổ cái. PR 3: chuyển tiền + test. PR 4: lịch sử</dd>
+            <dt>Tạm thời</dt><dd>Token giao dịch (PIN) giả lập ở local; service <code>security</code> làm sau</dd>
+            <dt>Chi phí</dt><dd>$0</dd>
+          </dl>
+        </article>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  const fmt = (n) => n.toLocaleString('vi-VN') + 'đ';
+  const state = {
+    balance: 10000000,
+    pin: '',
+    pinSet: false,
+    to: '', toName: '', amount: '', note: '',
+    merchant: null,
+    unread: 0,
+    toast: null,
+    tx: [
+      { who: 'Mở tài khoản', meta: '20/11 09:02 · BANK_FUNDING', amt: 10000000, bal: 10000000 }
+    ]
+  };
+  const directory = { '4155820931': 'TRAN T. B' };
+  const merchants = [
+    { name: 'Điện lực mẫu', cat: 'utilities', no: '9000000017' },
+    { name: 'Nhà hàng mẫu', cat: 'food', no: '9000000025' },
+    { name: 'Cửa hàng mẫu', cat: 'shopping', no: '9000000033' },
+    { name: 'Xe công nghệ mẫu', cat: 'transport', no: '9000000041' }
+  ];
+
+  const icons = {
+    send: '<svg viewBox="0 0 24 24"><path d="M4 12h14M13 6l6 6-6 6"/></svg>',
+    pay: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>',
+    list: '<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',
+    bell: '<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+    check: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>'
+  };
+
+  const specs = {
+    login: {
+      title: 'Đăng nhập', svc: 'Cognito',
+      api: 'Managed Login tại auth.andrewnguyen.cloud · OAuth2 code + PKCE',
+      rules: ['Đăng ký bắt buộc thuộc tính name', 'App nhận access token (JWT), không có session ở server', 'Envoy Gateway kiểm JWT trước khi tới service']
+    },
+    home: {
+      title: 'Trang chủ', svc: 'account',
+      api: 'GET /accounts/me',
+      rules: ['Lần đầu gọi: tạo tài khoản lười theo sub của Cognito', 'Tặng 10.000.000đ từ BANK_FUNDING (giao dịch mở tài khoản)', 'Số tài khoản 10 số, có chữ số kiểm tra Luhn', 'Tên hiển thị chữ hoa không dấu, lấy từ Cognito userInfo']
+    },
+    transfer: {
+      title: 'Chuyển tiền', svc: 'account',
+      api: 'GET /accounts/lookup?number=… rồi POST /transfers',
+      rules: ['1.000đ ≤ số tiền ≤ 50.000.000đ mỗi lần', 'Tổng tiền ra ≤ 100.000.000đ/ngày (giờ Việt Nam)', 'Ghi chú tuỳ chọn, tối đa 140 ký tự', 'Không chuyển cho chính mình', 'Tra tên người nhận trả tên đã che, VD TRAN T. B']
+    },
+    pin: {
+      title: 'Xác nhận PIN', svc: 'security',
+      api: 'POST /security/transaction-tokens → JWT ES256 sống 60 giây',
+      rules: ['PIN 6 số, lần đầu phải đặt PIN', 'Lưu argon2id(HMAC_KMS(pepper, pin), salt), pepper không rời KMS', 'Sai 5 lần liên tiếp → khoá 15 phút', 'Token giao dịch mang đúng ý định: loại, người nhận, số tiền, idempotency key']
+    },
+    done: {
+      title: 'Kết quả', svc: 'account',
+      api: 'POST /transfers với header X-Transaction-Token + Idempotency-Key',
+      rules: ['Sổ cái ghi kép: một bút toán nợ, một bút toán có', 'Gửi trùng cùng Idempotency-Key → trả lại kết quả cũ, không trừ tiền 2 lần', 'Ghi sự kiện vào outbox → SNS transactions']
+    },
+    pay: {
+      title: 'Thanh toán merchant', svc: 'account',
+      api: 'POST /payments (cùng luồng PIN như chuyển tiền)',
+      rules: ['Merchant giả seed bằng migration, tên chung chung', 'Danh mục: utilities, food, shopping, transport, entertainment', 'Cùng hạn mức với chuyển tiền', 'Dữ liệu chi tiêu theo danh mục dùng cho trợ lý AI đợt 2']
+    },
+    history: {
+      title: 'Lịch sử', svc: 'account',
+      api: 'GET /transactions?cursor=…',
+      rules: ['Mới nhất trước, phân trang bằng cursor', 'Lọc theo thời gian, chiều vào/ra, danh mục', 'Mỗi dòng có số dư sau giao dịch']
+    },
+    notif: {
+      title: 'Thông báo', svc: 'notification',
+      api: 'WebSocket /ws · SQS notification ← SNS transactions',
+      rules: ['Chỉ người nhận tiền được báo, realtime', 'Lưu danh sách thông báo, có trạng thái đã đọc', 'Message lỗi 5 lần → DLQ, có cảnh báo']
+    }
+  };
+  const order = ['login', 'home', 'transfer', 'pin', 'done', 'pay', 'history', 'notif'];
+  let current = 'login';
+
+  const screen = document.getElementById('screen');
+  const flow = document.getElementById('flow');
+  const spec = document.getElementById('spec');
+
+  function bar() {
+    return '<div class="bar"><span>9:41</span><span class="mono">bank.andrewnguyen.cloud</span></div>';
+  }
+  function toastHtml() {
+    if (!state.toast) return '';
+    return '<div class="toast" role="status"><b>' + state.toast.title + '</b><span>' + state.toast.body + '</span></div>';
+  }
+
+  const views = {
+    login: () => `
+      <div class="view">
+        <h2>minibank</h2>
+        <p class="muted">Ngân hàng số mini cho đồ án.</p>
+        <div class="cognito">
+          <span class="url">auth.andrewnguyen.cloud/login</span>
+          <label for="f-email">Email<input id="f-email" value="an.nguyen@example.com"></label>
+          <label for="f-pass">Mật khẩu<input id="f-pass" type="password" value="demo-password"></label>
+          <button class="btn" data-go="home">Đăng nhập</button>
+        </div>
+        <p class="hint">Màn này do Cognito Managed Login vẽ, không phải code của app.</p>
+      </div>`,
+    home: () => `
+      <div class="view">
+        <div class="home-top">
+          <div><p class="hint">Xin chào</p><h3>NGUYEN VAN AN</h3></div>
+          <button class="bell" data-go="notif" aria-label="Thông báo">${icons.bell}${state.unread ? '<span class="badge">' + state.unread + '</span>' : ''}</button>
+        </div>
+        <div class="balance-card">
+          <span>Số dư khả dụng</span>
+          <span class="amt">${fmt(state.balance)}</span>
+          <span class="mono">TK 7020113549</span>
+        </div>
+        <div class="actions">
+          <button class="act" data-go="transfer">${icons.send}Chuyển tiền</button>
+          <button class="act" data-go="pay">${icons.pay}Thanh toán</button>
+          <button class="act" data-go="history">${icons.list}Lịch sử</button>
+        </div>
+        <button class="btn ghost" id="sim-in">Giả lập: có người chuyển tiền đến</button>
+        <p class="hint">Nút giả lập để xem thông báo realtime hoạt động thế nào.</p>
+      </div>`,
+    transfer: () => {
+      const amt = parseInt(state.amount || '0', 10);
+      const amtErr = state.amount && (amt < 1000 || amt > 50000000) ? 'Số tiền phải từ 1.000đ đến 50.000.000đ.' :
+        (amt > state.balance ? 'Số dư không đủ.' : '');
+      const selfErr = state.to === '7020113549' ? 'Không thể chuyển cho chính mình.' : '';
+      const ok = state.toName && !amtErr && !selfErr && amt >= 1000;
+      return `
+      <div class="view">
+        <button class="back" data-go="home">‹ Trang chủ</button>
+        <h2>Chuyển tiền</h2>
+        <label for="f-to">Số tài khoản người nhận<input id="f-to" inputmode="numeric" maxlength="10" value="${state.to}" placeholder="10 chữ số"></label>
+        ${selfErr ? '<p class="err">' + selfErr + '</p>' : state.toName ? '<p class="ok-name">✓ ' + state.toName + '</p>' : '<p class="hint">Thử số mẫu: 4155820931</p>'}
+        <label for="f-amt">Số tiền (VND)<input id="f-amt" inputmode="numeric" value="${state.amount}" placeholder="VD 500000"></label>
+        ${amtErr ? '<p class="err">' + amtErr + '</p>' : '<p class="hint">Hạn mức: 50.000.000đ/lần, 100.000.000đ/ngày</p>'}
+        <label for="f-note">Ghi chú<input id="f-note" maxlength="140" value="${state.note}" placeholder="Tuỳ chọn"></label>
+        <button class="btn" data-go="pin" ${ok ? '' : 'disabled'}>Tiếp tục</button>
+      </div>`;
+    },
+    pin: () => {
+      const amt = state.merchant ? state.merchantAmt : parseInt(state.amount || '0', 10);
+      const to = state.merchant ? state.merchant.name : state.toName;
+      const dots = Array.from({ length: 6 }, (_, i) => '<span class="' + (i < state.pin.length ? 'on' : '') + '"></span>').join('');
+      const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'].map(k => k ? '<button data-key="' + k + '" aria-label="' + (k === '⌫' ? 'Xoá' : k) + '">' + k + '</button>' : '<span></span>').join('');
+      return `
+      <div class="view">
+        <button class="back" data-go="${state.merchant ? 'pay' : 'transfer'}">‹ Quay lại</button>
+        <h2>${state.pinSet ? 'Nhập PIN giao dịch' : 'Đặt PIN giao dịch'}</h2>
+        <div class="summary">
+          <div><span>Tới</span><b>${to}</b></div>
+          <div><span>Số tiền</span><b>${fmt(amt)}</b></div>
+        </div>
+        ${state.pinSet ? '' : '<p class="hint">Lần đầu giao dịch: đặt PIN 6 số.</p>'}
+        <div class="pin-dots" aria-label="Đã nhập ${state.pin.length} trên 6 số">${dots}</div>
+        <div class="keypad">${keys}</div>
+      </div>`;
+    },
+    done: () => {
+      const last = state.tx[0];
+      return `
+      <div class="view">
+        <div class="success">
+          <div class="check">${icons.check}</div>
+          <h2>Giao dịch thành công</h2>
+          <p class="muted">${last.who}</p>
+          <p class="mono" style="font-size:1.3rem;font-weight:600">${fmt(-last.amt)}</p>
+          <p class="hint">Số dư sau giao dịch: ${fmt(state.balance)}</p>
+        </div>
+        <button class="btn" data-go="home">Về trang chủ</button>
+        <button class="btn ghost" data-go="history">Xem lịch sử</button>
+      </div>`;
+    },
+    pay: () => `
+      <div class="view">
+        <button class="back" data-go="home">‹ Trang chủ</button>
+        <h2>Thanh toán</h2>
+        <p class="hint">Chọn nơi thanh toán (merchant mẫu). Số tiền mẫu 250.000đ.</p>
+        <div class="merchants">
+          ${merchants.map((m, i) => '<button class="merchant" data-merchant="' + i + '"><span>' + m.name + '</span><span class="chip">' + m.cat + '</span></button>').join('')}
+        </div>
+      </div>`,
+    history: () => `
+      <div class="view">
+        <button class="back" data-go="home">‹ Trang chủ</button>
+        <h2>Lịch sử giao dịch</h2>
+        <ul class="txlist">
+          ${state.tx.map(t => '<li><span class="who">' + t.who + '</span><span class="val ' + (t.amt > 0 ? 'in' : 'out') + '">' + (t.amt > 0 ? '+' : '') + fmt(t.amt) + '</span><span class="meta">' + t.meta + '</span><span class="bal">SD ' + fmt(t.bal) + '</span></li>').join('')}
+        </ul>
+      </div>`,
+    notif: () => {
+      state.unread = 0;
+      const items = state.tx.filter(t => t.amt > 0 && t.who !== 'Mở tài khoản');
+      return `
+      <div class="view">
+        <button class="back" data-go="home">‹ Trang chủ</button>
+        <h2>Thông báo</h2>
+        ${items.length ? '<ul class="txlist">' + items.map(t => '<li><span class="who">Tiền vào từ ' + t.who.replace('Nhận từ ', '') + '</span><span class="val in">+' + fmt(t.amt) + '</span><span class="meta">' + t.meta + '</span><span class="bal">đã đọc</span></li>').join('') + '</ul>'
+          : '<p class="muted">Chưa có thông báo. Ở trang chủ, bấm "Giả lập: có người chuyển tiền đến".</p>'}
+      </div>`;
+    }
+  };
+
+  function renderSpec() {
+    const s = specs[current];
+    spec.innerHTML = '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h2>' + s.title + '</h2><span class="svc">' + s.svc + '</span></div>' +
+      '<dl class="kv"><dt>Gọi tới</dt><dd class="mono">' + s.api + '</dd></dl>' +
+      '<ul class="rules">' + s.rules.map(r => '<li>' + r + '</li>').join('') + '</ul>';
+    flow.innerHTML = order.map(k => '<button data-go="' + k + '" aria-current="' + (k === current) + '">' + specs[k].title + '</button>').join('');
+  }
+
+  function render() {
+    screen.innerHTML = bar() + views[current]() + toastHtml();
+    renderSpec();
+  }
+
+  function go(to) {
+    if (to === 'pin' && current === 'transfer') state.merchant = null;
+    if (to === 'done' || to === 'pin') state.pin = '';
+    current = to;
+    render();
+  }
+
+  function commit() {
+    const isPay = !!state.merchant;
+    const amt = isPay ? state.merchantAmt : parseInt(state.amount, 10);
+    state.balance -= amt;
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    state.tx.unshift({
+      who: isPay ? 'Thanh toán ' + state.merchant.name : 'Chuyển tới ' + state.toName,
+      meta: '20/11 ' + hh + (isPay ? ' · ' + state.merchant.cat : state.note ? ' · ' + state.note : ''),
+      amt: -amt, bal: state.balance
+    });
+    state.pinSet = true;
+    state.to = ''; state.toName = ''; state.amount = ''; state.note = '';
+    go('done');
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-go],[data-key],[data-merchant],#sim-in');
+    if (!t) return;
+    if (t.id === 'sim-in') {
+      const amt = 1500000;
+      state.balance += amt;
+      state.tx.unshift({ who: 'Nhận từ TRAN T. B', meta: '20/11 · trả tiền ăn trưa', amt, bal: state.balance });
+      state.unread += 1;
+      state.toast = { title: 'minibank', body: 'Bạn vừa nhận ' + fmt(amt) + ' từ TRAN T. B' };
+      render();
+      setTimeout(() => { state.toast = null; if (current) render(); }, 3200);
+      return;
+    }
+    if (t.dataset.merchant !== undefined) {
+      state.merchant = merchants[+t.dataset.merchant];
+      state.merchantAmt = 250000;
+      state.pin = '';
+      current = 'pin';
+      render();
+      return;
+    }
+    if (t.dataset.key) {
+      const k = t.dataset.key;
+      if (k === '⌫') state.pin = state.pin.slice(0, -1);
+      else if (state.pin.length < 6) state.pin += k;
+      if (state.pin.length === 6) { render(); setTimeout(commit, 250); return; }
+      render();
+      return;
+    }
+    if (t.dataset.go) go(t.dataset.go);
+  });
+
+  screen.addEventListener('input', (e) => {
+    const id = e.target.id;
+    const pos = e.target.selectionStart;
+    if (id === 'f-to') {
+      state.to = e.target.value.replace(/\D/g, '').slice(0, 10);
+      state.toName = directory[state.to] || '';
+    } else if (id === 'f-amt') {
+      state.amount = e.target.value.replace(/\D/g, '').slice(0, 9);
+    } else if (id === 'f-note') {
+      state.note = e.target.value.slice(0, 140);
+      return;
+    } else return;
+    render();
+    const el = document.getElementById(id);
+    if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (_) {} }
+  });
+
+  // tabs
+  const tabs = ['app', 'infra', 'next'];
+  function showTab() {
+    const h = (location.hash || '#app').slice(1);
+    const name = tabs.includes(h) ? h : 'app';
+    tabs.forEach(n => {
+      document.getElementById('view-' + n).hidden = n !== name;
+      document.getElementById('tab-' + n).setAttribute('aria-selected', String(n === name));
+    });
+  }
+  window.addEventListener('hashchange', showTab);
+  showTab();
+  render();
+})();
+</script>

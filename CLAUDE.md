@@ -22,6 +22,7 @@ Source of truth, read before changing design:
 - `docs/superpowers/specs/2026-10-26-minibank-app-design.md` — app (approved)
 - `docs/superpowers/specs/2026-10-26-minibank-infra-design.md` — infra (draft)
 - `docs/adr/` — one file per decision, with its SAA-C03 domain
+- `docs/superpowers/specs/2026-11-20-minibank-prototype.html` — clickable app mock + infra status
 
 In the specs, **[user]** = decided by the user (do not change without asking),
 **[claude]** = proposed by Claude (open to review).
@@ -35,6 +36,13 @@ In the specs, **[user]** = decided by the user (do not change without asking),
   the console (a lab) to practise, then **clean it up** (delete it, in the right order), then
   write Terraform that builds it **from scratch**. No `import` by default — only when recreating
   would break something or lose data (e.g. the hosted zone), and ask first.
+- **Preview first.** Before each task (infra stack or app feature), show what will be built —
+  resources or files/API/screens, expected plan or UI, cost, PR split — and wait for the user's
+  OK. **After every finished task, update the prototype**
+  `docs/superpowers/specs/2026-11-20-minibank-prototype.html` (status colours, next-task
+  previews), then republish it to the same claude.ai artifact.
+- **Two tracks in parallel.** Infra labs (the user builds, Claude guides) and app code (Claude
+  writes, the user reviews). Keep each PR small enough to review in one sitting.
 - **Claude writes, the user owns.** Claude writes the code; the user reviews, commits, pushes and
   merges. Never commit, push, merge, `terraform apply` or `destroy` — give the commands instead.
   Read-only checks (`git status`, `terraform plan`, `aws ... describe/list/get`) are fine.
