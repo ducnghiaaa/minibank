@@ -132,4 +132,3 @@ CloudFront) · workload IAM roles · CI roles `lifecycle`, `app-ci`.
 - `ci-oidc` and `dns` providers: add `env=dev` and `component=<folder>` tags.
 - `dns/main.tf`: the `import` block is done; keep as record or remove.
 - Default VPC (`172.31.0.0/16`) still exists in Singapore — decide keep or delete.
-- `/Users/mac/CLAUDE.md` (SAA quiz) loads into every session — move it to its own folder.
