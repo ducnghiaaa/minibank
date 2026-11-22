@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"testing"
 
@@ -110,5 +111,39 @@ func TestMeInParallel(t *testing.T) {
 	s.Pool.QueryRow(ctx, `SELECT count(*) FROM transactions WHERE type = 'OPENING'`).Scan(&openings)
 	if accounts != 1 || openings != 1 {
 		t.Errorf("accounts=%d openings=%d, want 1 and 1", accounts, openings)
+	}
+}
+
+func TestMaskName(t *testing.T) {
+	cases := map[string]string{
+		"NGUYEN VAN AN":      "NGUYEN V. A",
+		"TRAN THI BICH NGOC": "TRAN T. B. N",
+		"TRAN BINH":          "TRAN B",
+		"AN":                 "A",
+		"":                   "",
+	}
+	for in, want := range cases {
+		if got := MaskName(in); got != want {
+			t.Errorf("MaskName(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestLookup(t *testing.T) {
+	ctx := context.Background()
+	s := setup(t)
+	a, err := s.Me(ctx, "sub-1", "Nguyễn Văn An")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.Lookup(ctx, a.Number)
+	if err != nil || got.MaskedName != "NGUYEN V. A" || got.Number != a.Number {
+		t.Errorf("lookup = %+v, %v", got, err)
+	}
+	// merchants and the system account are not transfer recipients; unknown numbers are not found
+	for _, n := range []string{"9000000019", "0000000000", "7020113549"} {
+		if _, err := s.Lookup(ctx, n); !errors.Is(err, ErrNotFound) {
+			t.Errorf("lookup %s: err = %v, want ErrNotFound", n, err)
+		}
 	}
 }

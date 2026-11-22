@@ -30,6 +30,15 @@ type Account struct {
 	Balance     int64  `json:"balance"`
 }
 
+// ErrNotFound means no active customer account has that number.
+var ErrNotFound = errors.New("account not found")
+
+// Recipient is what a sender may see before confirming a transfer: never the full name.
+type Recipient struct {
+	Number     string `json:"number"`
+	MaskedName string `json:"masked_name"`
+}
+
 // Service opens and reads customer accounts.
 type Service struct {
 	Pool *pgxpool.Pool
@@ -55,6 +64,45 @@ func (s Service) Me(ctx context.Context, sub, name string) (Account, error) {
 		// not there: the random number was taken, so nothing was inserted; try another
 	}
 	return Account{}, errors.New("could not allocate an account number")
+}
+
+// Lookup lets a sender check who owns an account number before sending money.
+// Only customer accounts; the caller checks the number format first (ValidNumber).
+func (s Service) Lookup(ctx context.Context, number string) (Recipient, error) {
+	var name string
+	err := s.Pool.QueryRow(ctx,
+		`SELECT display_name FROM accounts WHERE number = $1 AND type = 'CUSTOMER' AND status = 'ACTIVE'`, number).Scan(&name)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Recipient{}, ErrNotFound
+	}
+	if err != nil {
+		return Recipient{}, err
+	}
+	return Recipient{Number: number, MaskedName: MaskName(name)}, nil
+}
+
+// MaskName keeps the family name and initials: "NGUYEN VAN AN" → "NGUYEN V. A".
+// Enough to spot a wrong recipient, not enough to learn someone's full name.
+func MaskName(name string) string {
+	words := strings.Fields(name)
+	switch len(words) {
+	case 0:
+		return ""
+	case 1:
+		return firstLetter(words[0])
+	}
+	out := []string{words[0]}
+	for _, w := range words[1 : len(words)-1] {
+		out = append(out, firstLetter(w)+".")
+	}
+	return strings.Join(append(out, firstLetter(words[len(words)-1])), " ")
+}
+
+func firstLetter(w string) string {
+	for _, r := range w {
+		return string(r)
+	}
+	return ""
 }
 
 func (s Service) get(ctx context.Context, sub string) (Account, error) {

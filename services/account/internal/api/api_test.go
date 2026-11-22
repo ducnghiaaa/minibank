@@ -12,6 +12,7 @@ import (
 
 	"github.com/ducnghiaaa/minibank/internal/platform/auth"
 	"github.com/ducnghiaaa/minibank/services/account/internal/accounts"
+	"github.com/ducnghiaaa/minibank/services/account/internal/history"
 	"github.com/ducnghiaaa/minibank/services/account/internal/transfers"
 )
 
@@ -19,7 +20,24 @@ type fakeDB struct{ err error }
 
 func (f fakeDB) Ping(context.Context) error { return f.err }
 
-type fakeAccounts struct{ gotSub string }
+type fakeAccounts struct {
+	gotSub    string
+	lookupErr error
+}
+
+func (f *fakeAccounts) Lookup(_ context.Context, number string) (accounts.Recipient, error) {
+	return accounts.Recipient{Number: number, MaskedName: "NGUYEN V. A"}, f.lookupErr
+}
+
+type fakeHistory struct {
+	got history.Query
+	err error
+}
+
+func (f *fakeHistory) List(_ context.Context, q history.Query) (history.Page, error) {
+	f.got = q
+	return history.Page{Items: []history.Item{}}, f.err
+}
 
 func (f *fakeAccounts) Me(_ context.Context, sub, _ string) (accounts.Account, error) {
 	f.gotSub = sub
@@ -49,7 +67,12 @@ func (f *fakeTransfers) Transfer(_ context.Context, r transfers.Request) (transf
 }
 
 func routerWith(dbErr error, acc *fakeAccounts, tr *fakeTransfers) http.Handler {
-	return NewRouter(Deps{DB: fakeDB{dbErr}, Accounts: acc, Transfers: tr, Auth: fakeAuth, Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	return routerFull(dbErr, acc, tr, &fakeHistory{})
+}
+
+func routerFull(dbErr error, acc *fakeAccounts, tr *fakeTransfers, h *fakeHistory) http.Handler {
+	return NewRouter(Deps{DB: fakeDB{dbErr}, Accounts: acc, Transfers: tr, History: h, Auth: fakeAuth,
+		Log: slog.New(slog.NewTextHandler(io.Discard, nil))})
 }
 
 func router(dbErr error, acc *fakeAccounts) http.Handler {
@@ -152,5 +175,46 @@ func TestTransfersErrorCodes(t *testing.T) {
 	}
 	if rec := postTransfer(router(nil, &fakeAccounts{}), `not json`, nil); rec.Code != http.StatusBadRequest {
 		t.Errorf("bad JSON: %d, want 400", rec.Code)
+	}
+}
+
+func TestLookup(t *testing.T) {
+	h := router(nil, &fakeAccounts{})
+	if rec := do(h, "/accounts/lookup?number=7020113549", "ok"); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "NGUYEN V. A") {
+		t.Errorf("valid: %d %s", rec.Code, rec.Body)
+	}
+	for _, n := range []string{"", "123", "7020113548", "abcdefghij"} {
+		if code := do(h, "/accounts/lookup?number="+n, "ok").Code; code != http.StatusBadRequest {
+			t.Errorf("number %q: %d, want 400", n, code)
+		}
+	}
+	missing := router(nil, &fakeAccounts{lookupErr: accounts.ErrNotFound})
+	if code := do(missing, "/accounts/lookup?number=7020113549", "ok").Code; code != http.StatusNotFound {
+		t.Errorf("not found: %d, want 404", code)
+	}
+	if code := do(h, "/accounts/lookup?number=7020113549", "").Code; code != http.StatusUnauthorized {
+		t.Errorf("no token: %d, want 401", code)
+	}
+}
+
+func TestTransactionsQuery(t *testing.T) {
+	hist := &fakeHistory{}
+	h := routerFull(nil, &fakeAccounts{}, &fakeTransfers{}, hist)
+	rec := do(h, "/transactions?limit=5&direction=out&category=food&cursor=abc&from=2026-11-20T00:00:00%2B07:00", "ok")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("code %d: %s", rec.Code, rec.Body)
+	}
+	if hist.got.Sub != "sub-1" || hist.got.Limit != 5 || hist.got.Direction != "out" || hist.got.Category != "food" ||
+		hist.got.Cursor != "abc" || hist.got.From.IsZero() || !hist.got.To.IsZero() {
+		t.Errorf("query = %+v", hist.got)
+	}
+	for _, bad := range []string{"limit=x", "from=yesterday"} {
+		if code := do(h, "/transactions?"+bad, "ok").Code; code != http.StatusBadRequest {
+			t.Errorf("%s: %d, want 400", bad, code)
+		}
+	}
+	invalid := routerFull(nil, &fakeAccounts{}, &fakeTransfers{}, &fakeHistory{err: history.ErrInvalid})
+	if code := do(invalid, "/transactions", "ok").Code; code != http.StatusBadRequest {
+		t.Errorf("service ErrInvalid: %d, want 400", code)
 	}
 }

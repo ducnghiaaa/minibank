@@ -7,10 +7,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/ducnghiaaa/minibank/internal/platform/auth"
 	"github.com/ducnghiaaa/minibank/services/account/internal/accounts"
+	"github.com/ducnghiaaa/minibank/services/account/internal/history"
 	"github.com/ducnghiaaa/minibank/services/account/internal/transfers"
 )
 
@@ -19,9 +21,15 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
-// Accounts opens and reads the caller's account.
+// Accounts opens and reads accounts.
 type Accounts interface {
 	Me(ctx context.Context, sub, name string) (accounts.Account, error)
+	Lookup(ctx context.Context, number string) (accounts.Recipient, error)
+}
+
+// History lists the caller's transactions.
+type History interface {
+	List(ctx context.Context, q history.Query) (history.Page, error)
 }
 
 // Transfers moves money between customers.
@@ -34,6 +42,7 @@ type Deps struct {
 	DB        Pinger
 	Accounts  Accounts
 	Transfers Transfers
+	History   History
 	Auth      func(http.Handler) http.Handler
 	Log       *slog.Logger
 }
@@ -63,6 +72,47 @@ func NewRouter(d Deps) http.Handler {
 			return
 		}
 		writeJSON(w, http.StatusOK, a)
+	})))
+
+	// rate-limited per caller at Envoy (BackendTrafficPolicy), so it cannot be used to scan names
+	mux.Handle("GET /accounts/lookup", d.Auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		number := r.URL.Query().Get("number")
+		if !accounts.ValidNumber(number) {
+			writeError(w, http.StatusBadRequest, "invalid_request", "number must be 10 digits with a valid check digit")
+			return
+		}
+		rc, err := d.Accounts.Lookup(r.Context(), number)
+		if errors.Is(err, accounts.ErrNotFound) {
+			writeError(w, http.StatusNotFound, "recipient_not_found", "no customer account has this number")
+			return
+		}
+		if err != nil {
+			d.Log.Error("accounts/lookup", "err", err)
+			writeError(w, http.StatusInternalServerError, "internal", "internal error")
+			return
+		}
+		writeJSON(w, http.StatusOK, rc)
+	})))
+
+	mux.Handle("GET /transactions", d.Auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, _ := auth.FromContext(r.Context())
+		q, err := historyQuery(r, c.Sub)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid_request", err.Error())
+			return
+		}
+		page, err := d.History.List(r.Context(), q)
+		switch {
+		case errors.Is(err, history.ErrInvalid):
+			writeError(w, http.StatusBadRequest, "invalid_request", err.Error())
+		case errors.Is(err, history.ErrNoAccount):
+			writeError(w, http.StatusNotFound, "no_account", err.Error())
+		case err != nil:
+			d.Log.Error("transactions", "err", err)
+			writeError(w, http.StatusInternalServerError, "internal", "internal error")
+		default:
+			writeJSON(w, http.StatusOK, page)
+		}
 	})))
 
 	mux.Handle("POST /transfers", d.Auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +147,29 @@ func NewRouter(d Deps) http.Handler {
 		writeJSON(w, http.StatusOK, res)
 	})))
 	return mux
+}
+
+// historyQuery reads ?cursor, limit, from, to (RFC 3339), direction, category.
+func historyQuery(r *http.Request, sub string) (history.Query, error) {
+	v := r.URL.Query()
+	q := history.Query{Sub: sub, Cursor: v.Get("cursor"), Direction: v.Get("direction"), Category: v.Get("category")}
+	if s := v.Get("limit"); s != "" {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return q, errors.New("limit must be a number")
+		}
+		q.Limit = n
+	}
+	for name, dst := range map[string]*time.Time{"from": &q.From, "to": &q.To} {
+		if s := v.Get(name); s != "" {
+			t, err := time.Parse(time.RFC3339, s)
+			if err != nil {
+				return q, errors.New(name + " must be an RFC 3339 time, e.g. 2026-11-20T00:00:00+07:00")
+			}
+			*dst = t
+		}
+	}
+	return q, nil
 }
 
 // transferError maps a transfer error to an HTTP status and a stable code the frontend can switch on.
