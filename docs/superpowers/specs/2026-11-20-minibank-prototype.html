@@ -262,7 +262,7 @@ section[hidden] { display: none; }
           <g class="n todo"><rect x="30" y="250" width="100" height="44"/><text x="80" y="277" text-anchor="middle">Browser</text></g>
           <g class="n todo"><rect x="160" y="240" width="110" height="64"/><text x="215" y="267" text-anchor="middle">CloudFront</text><text class="small" x="215" y="285" text-anchor="middle">bank.</text></g>
           <g class="n todo"><rect x="160" y="70" width="110" height="64"/><text x="215" y="97" text-anchor="middle">S3 SPA</text><text class="small" x="215" y="115" text-anchor="middle">frontend</text></g>
-          <g class="n next"><rect x="30" y="70" width="110" height="64"/><text x="85" y="97" text-anchor="middle">Cognito</text><text class="small" x="85" y="115" text-anchor="middle">auth.</text></g>
+          <g class="n done"><rect x="30" y="70" width="110" height="64"/><text x="85" y="97" text-anchor="middle">Cognito</text><text class="small" x="85" y="115" text-anchor="middle">auth.</text></g>
           <g class="n done"><rect x="30" y="440" width="110" height="64"/><text x="85" y="467" text-anchor="middle">Route 53</text><text class="small" x="85" y="485" text-anchor="middle">andrewnguyen.cloud</text></g>
           <g class="n todo"><rect x="160" y="440" width="110" height="64"/><text x="215" y="467" text-anchor="middle">ACM certs</text><text class="small" x="215" y="485" text-anchor="middle">us-east-1 + SG</text></g>
 
@@ -277,7 +277,7 @@ section[hidden] { display: none; }
           <text class="zone-label" x="322" y="422">DB SUBNETS · chỉ route local</text>
 
           <g class="n todo"><rect x="330" y="74" width="120" height="60"/><text x="390" y="100" text-anchor="middle">NLB</text><text class="small" x="390" y="118" text-anchor="middle">origin.</text></g>
-          <g class="n todo"><rect x="480" y="74" width="120" height="60"/><text x="540" y="100" text-anchor="middle">NAT fck-nat</text><text class="small" x="540" y="118" text-anchor="middle">ephemeral</text></g>
+          <g class="n next"><rect x="480" y="74" width="120" height="60"/><text x="540" y="100" text-anchor="middle">NAT fck-nat</text><text class="small" x="540" y="118" text-anchor="middle">ephemeral</text></g>
           <g class="n done"><rect x="630" y="74" width="116" height="60"/><text x="688" y="100" text-anchor="middle">IGW</text><text class="small" x="688" y="118" text-anchor="middle">+ S3 endpoint</text></g>
 
           <g class="n todo"><rect x="330" y="190" width="120" height="56"/><text x="390" y="214" text-anchor="middle">Envoy Gateway</text><text class="small" x="390" y="232" text-anchor="middle">JWT, rate limit</text></g>
@@ -285,9 +285,9 @@ section[hidden] { display: none; }
           <g class="n todo"><rect x="630" y="190" width="116" height="56"/><text x="688" y="214" text-anchor="middle">account</text><text class="small" x="688" y="232" text-anchor="middle">Go · sổ cái</text></g>
           <g class="n todo"><rect x="630" y="262" width="116" height="56"/><text x="688" y="286" text-anchor="middle">notification</text><text class="small" x="688" y="304" text-anchor="middle">Go · WebSocket</text></g>
           <g class="n todo"><rect x="330" y="262" width="270" height="56"/><text x="465" y="286" text-anchor="middle">ArgoCD · Karpenter · ESO · LB Controller</text><text class="small" x="465" y="304" text-anchor="middle">add-ons qua GitOps</text></g>
-          <g class="n todo"><rect x="330" y="330" width="416" height="50"/><text x="538" y="352" text-anchor="middle">EKS · 1 node t4g.medium + Graviton Spot</text><text class="small" x="538" y="369" text-anchor="middle">bật khi làm, tắt lúc 01:00</text></g>
+          <g class="n next"><rect x="330" y="330" width="416" height="50"/><text x="538" y="352" text-anchor="middle">EKS · 1 node t4g.medium + Graviton Spot</text><text class="small" x="538" y="369" text-anchor="middle">bật khi làm, tắt lúc 01:00</text></g>
 
-          <g class="n todo"><rect x="430" y="444" width="210" height="76"/><text x="535" y="474" text-anchor="middle">Aurora PostgreSQL</text><text class="small" x="535" y="492" text-anchor="middle">Serverless v2 · 0–2 ACU</text><text class="small" x="535" y="508" text-anchor="middle">DB riêng mỗi service</text></g>
+          <g class="n next"><rect x="430" y="444" width="210" height="76"/><text x="535" y="474" text-anchor="middle">Aurora PostgreSQL</text><text class="small" x="535" y="492" text-anchor="middle">Serverless v2 · 0–2 ACU</text><text class="small" x="535" y="508" text-anchor="middle">DB riêng mỗi service</text></g>
 
           <!-- regional services -->
           <rect class="zone" x="790" y="10" width="180" height="540" rx="12"/>
@@ -324,8 +324,8 @@ section[hidden] { display: none; }
             <li><i class="dot done"></i><span><code>network</code> — VPC, subnet, S3 endpoint</span></li>
             <li><i class="dot done"></i><span><code>registry</code> — ECR</span></li>
             <li><i class="dot done"></i><span><code>messaging</code> — SNS/SQS</span></li>
-            <li><i class="dot next"></i><span><code>identity</code> — Cognito</span></li>
-            <li><i class="dot todo"></i><span><code>data</code> — KMS, Aurora, Secrets</span></li>
+            <li><i class="dot done"></i><span><code>identity</code> — Cognito</span></li>
+            <li><i class="dot next"></i><span><code>data</code> — Aurora (KMS sau)</span></li>
             <li><i class="dot todo"></i><span><code>edge</code> — ACM, S3, CloudFront</span></li>
             <li><i class="dot todo"></i><span>IAM role cho workload, CI role</span></li>
           </ul>
@@ -333,8 +333,8 @@ section[hidden] { display: none; }
         <div class="stack-group">
           <h3>Ephemeral · <code>up</code> / <code>down</code></h3>
           <ul>
-            <li><i class="dot todo"></i><span><code>nat</code> — fck-nat t4g.nano</span></li>
-            <li><i class="dot todo"></i><span><code>eks</code> — cụm + node hệ thống</span></li>
+            <li><i class="dot next"></i><span><code>nat</code> — fck-nat t4g.nano</span></li>
+            <li><i class="dot next"></i><span><code>eks</code> — cụm + node hệ thống</span></li>
             <li><i class="dot todo"></i><span><code>addons-iam</code> — Pod Identity</span></li>
             <li><i class="dot todo"></i><span><code>argocd-bootstrap</code></span></li>
           </ul>
@@ -346,8 +346,8 @@ section[hidden] { display: none; }
             <li><i class="dot done"></i><span><code>account</code> PR 2 — schema sổ cái</span></li>
             <li><i class="dot done"></i><span><code>account</code> PR 3 — mở tài khoản, ghi sổ</span></li>
             <li><i class="dot done"></i><span><code>account</code> PR 4 — chuyển tiền</span></li>
-            <li><i class="dot next"></i><span><code>account</code> PR 5 — tra người nhận, lịch sử</span></li>
-            <li><i class="dot todo"></i><span><code>account</code> PR 6 — thanh toán merchant</span></li>
+            <li><i class="dot done"></i><span><code>account</code> PR 5 — tra người nhận, lịch sử</span></li>
+            <li><i class="dot next"></i><span><code>account</code> PR 6 — thanh toán merchant</span></li>
             <li><i class="dot todo"></i><span><code>security</code> — PIN, token</span></li>
             <li><i class="dot todo"></i><span><code>notification</code> — WebSocket</span></li>
             <li><i class="dot todo"></i><span><code>frontend</code> — React</span></li>
@@ -364,36 +364,35 @@ section[hidden] { display: none; }
       <p class="note">Mỗi việc mới sẽ có một bản xem trước như dưới đây. Bạn duyệt (hoặc sửa) trước, mình mới làm.</p>
       <div class="previews">
         <article class="preview">
-          <p class="tag">Hướng A · Hạ tầng</p>
-          <h2><code>identity</code> — Cognito</h2>
-          <p>Đăng ký, đăng nhập cho khách. Cognito phát access token (JWT), service <code>account</code> kiểm token bằng JWKS của user pool, giống hệt <code>devtoken</code> đang làm ở local.</p>
+          <p class="tag">Hướng A · Lên compute</p>
+          <h2>3 chặng: Aurora → NAT → EKS</h2>
+          <p>Mục tiêu: pod <code>account</code> chạy trên EKS, nói chuyện với Aurora, nhận token Cognito thật. Từ chặng 2, có tài nguyên tính tiền theo giờ, nên luôn có <code>down</code> ngay sau khi thử.</p>
           <div class="tbl"><table>
-            <tr><th>Tài nguyên</th><th>Cấu hình</th></tr>
-            <tr><td>User pool <code>minibank-dev</code></td><td>Tier Essentials (cần cho Managed Login), đăng nhập bằng email, thuộc tính <code>name</code> bắt buộc</td></tr>
-            <tr><td>App client <code>web</code></td><td>Authorization code + PKCE, không có client secret (SPA chạy trên trình duyệt)</td></tr>
-            <tr><td>App client <code>e2e-test</code></td><td>Cho phép <code>ADMIN_USER_PASSWORD_AUTH</code>, chỉ dùng cho script test</td></tr>
-            <tr><td>Domain Managed Login</td><td>Tạm dùng domain prefix của Cognito; <code>auth.andrewnguyen.cloud</code> làm sau cùng stack <code>edge</code> (cần ACM ở us-east-1)</td></tr>
+            <tr><th>Chặng</th><th>Làm gì</th><th>Tiền</th></tr>
+            <tr><td>1. <code>data</code> (persistent)</td><td>Aurora PostgreSQL Serverless v2, min 0 ACU, max 2 ACU, IAM database auth, mật khẩu master do RDS quản trong Secrets Manager, chỉ ở subnet DB. Lab: tạo bằng console, xem tự dừng về 0 ACU, xoá</td><td>Khi ngủ: chỉ lưu trữ ≈ $1/tháng. Khi thức: ≈ $0.08–0.35/giờ</td></tr>
+            <tr><td>2. <code>nat</code> (ephemeral)</td><td>fck-nat <code>t4g.nano</code> ở subnet public + route <code>0.0.0.0/0</code> vào route table private</td><td>≈ $0.005/giờ + IPv4 $0.005/giờ</td></tr>
+            <tr><td>3. <code>eks</code> (ephemeral)</td><td>Cụm EKS bản standard support mới nhất, access entries, add-on VPC CNI (prefix delegation), CoreDNS, kube-proxy, Pod Identity Agent, 1 node <code>t4g.medium</code>. Lab: tạo cụm bằng console, <code>kubectl get nodes</code>, xoá</td><td>≈ $0.10 + $0.04 = $0.14/giờ</td></tr>
           </table></div>
           <dl class="kv">
-            <dt>Lab console</dt><dd>Tạo user pool, đăng ký 1 user qua trang Managed Login, lấy token, giải mã JWT xem <code>sub</code>, <code>token_use</code>, <code>iss</code>; so với token của <code>devtoken</code>; rồi cleanup</dd>
-            <dt>Terraform</dt><dd>Resource thuần, plan dự kiến khoảng 4–5 resource</dd>
-            <dt>Chi phí</dt><dd>Gần $0 ở mức demo (nằm trong free tier theo số người dùng hoạt động/tháng). Kiểm lại trang giá trước khi tạo</dd>
-            <dt>SAA</dt><dd>Domain 1: Cognito user pool vs identity pool, OAuth2/OIDC, JWT</dd>
+            <dt>Lần thử đầu</dt><dd>Deploy <code>account</code> bằng <code>kubectl apply</code> cho nhanh; ArgoCD, Karpenter, Envoy, NLB làm ở các bước sau</dd>
+            <dt>Tổng khi chạy</dt><dd>≈ $0.25–0.50/giờ. Một buổi thử 2 giờ ≈ $1</dd>
+            <dt>SAA</dt><dd>Domain 2–3: Aurora Serverless, Multi-AZ subnet group; Domain 4: NAT instance vs NAT Gateway; EKS node, Pod Identity</dd>
           </dl>
         </article>
         <article class="preview">
-          <p class="tag">Hướng B · App</p>
-          <h2><code>account</code> PR 5 — tra người nhận + lịch sử</h2>
-          <p>Hai API chỉ đọc mà màn hình chuyển tiền và lịch sử trong tab App cần.</p>
+          <p class="tag">Hướng B · App lên AWS</p>
+          <h2><code>account</code> sẵn sàng chạy trên EKS</h2>
+          <p>Những thay đổi code để <code>account</code> chạy được với Aurora và Cognito thật, không có mật khẩu nào trong cấu hình.</p>
           <div class="tbl"><table>
-            <tr><th>API</th><th>Quy tắc</th></tr>
-            <tr><td class="mono">GET /accounts/lookup?number=</td><td>Trả tên đã che (<code>NGUYEN VAN AN</code> → <code>NGUYEN V. A</code>); chỉ tài khoản khách; số sai Luhn → 400</td></tr>
-            <tr><td class="mono">GET /transactions</td><td>Mới nhất trước, phân trang bằng cursor; lọc theo thời gian, chiều vào/ra, danh mục; mỗi dòng có số dư sau giao dịch</td></tr>
+            <tr><th>Thay đổi</th><th>Vì sao</th></tr>
+            <tr><td>Kết nối DB bằng IAM auth token (pgx <code>BeforeConnect</code>, token mới mỗi kết nối)</td><td>Spec §10: không có mật khẩu DB; quyền lấy qua Pod Identity</td></tr>
+            <tr><td>Gọi Cognito <code>userInfo</code> khi mở tài khoản lười</td><td>Access token không có <code>name</code> (câu hỏi lab Cognito)</td></tr>
+            <tr><td><code>/readyz</code> và migrate chịu được Aurora thức dậy ~15 giây</td><td>Aurora 0 ACU ngủ khi không có kết nối</td></tr>
+            <tr><td>Manifest Kubernetes đầu tiên (Deployment, Service, Job migrate)</td><td>Để <code>kubectl apply</code> ở chặng 3; sau chuyển vào <code>minibank-gitops</code></td></tr>
           </table></div>
           <dl class="kv">
-            <dt>Test</dt><dd>Cursor không trùng, không sót khi có giao dịch mới chen vào giữa 2 trang; không xem được lịch sử người khác</dd>
-            <dt>Chống dò</dt><dd>Tra người nhận bị giới hạn số lần (làm ở Envoy rate limit, ghi chú trong code)</dd>
-            <dt>Chi phí</dt><dd>$0, chạy local</dd>
+            <dt>Hoãn</dt><dd>PR 6 (thanh toán merchant) làm sau khi <code>account</code> đã chạy trên cụm</dd>
+            <dt>Chi phí</dt><dd>$0, viết và test ở local</dd>
           </dl>
         </article>
       </div>
