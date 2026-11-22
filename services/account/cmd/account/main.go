@@ -18,6 +18,7 @@ import (
 	"github.com/ducnghiaaa/minibank/services/account/internal/accounts"
 	"github.com/ducnghiaaa/minibank/services/account/internal/api"
 	"github.com/ducnghiaaa/minibank/services/account/internal/db"
+	"github.com/ducnghiaaa/minibank/services/account/internal/history"
 	"github.com/ducnghiaaa/minibank/services/account/internal/transfers"
 	"github.com/ducnghiaaa/minibank/services/account/internal/txntoken"
 )
@@ -64,6 +65,7 @@ func main() {
 		DB:        pool,
 		Accounts:  accounts.Service{Pool: pool},
 		Transfers: transfers.Service{Pool: pool, Tokens: txnVerifier},
+		History:   history.Service{Pool: pool},
 		Auth:      verifier.Middleware,
 		Log:       log,
 	})
