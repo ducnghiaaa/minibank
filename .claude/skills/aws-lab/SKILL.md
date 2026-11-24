@@ -5,8 +5,9 @@ description: Guide the user to build a new AWS resource by hand in the console, 
 
 # Console lab
 
-The user builds it by hand first, to practise the console, then deletes it. Terraform then
-builds it from scratch (see `codify`).
+The user builds the **real minibank version** by hand — real `minibank-dev-*` names and the
+exact settings Terraform will have — and proves it with the real app. Then deletes it, and
+Terraform builds it again from scratch, identical (see `codify`). Never a toy lab.
 
 ## Before step 1
 
@@ -15,6 +16,8 @@ builds it from scratch (see `codify`).
 3. Tell the user, in one short table: what we will build, the **cost** (per hour / per month,
    "free" if free), and the SAA-C03 topic it teaches.
 4. Split the lab into small steps (one resource or one setting per step).
+5. Include a **"prove it with the app"** step (e.g. run `account` against it). If the app cannot
+   use the resource yet, say so and finish the app part first.
 
 ## Each step
 

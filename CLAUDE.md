@@ -33,10 +33,12 @@ In the specs, **[user]** = decided by the user (do not change without asking),
   their report. Explain and run labs **in Vietnamese**, keeping AWS/CLI terms in English. Code,
   comments, commits, `CLAUDE.md` and skills stay in English. Faculty documents (`docs/thesis/`)
   are in Vietnamese.
-- **Console first, then code.** For each new AWS resource: guide the user to build it by hand in
-  the console (a lab) to practise, then **clean it up** (delete it, in the right order), then
-  write Terraform that builds it **from scratch**. No `import` by default — only when recreating
-  would break something or lose data (e.g. the hosted zone), and ask first.
+- **Console first, then code.** For each new AWS resource: the user builds the **real minibank
+  version** by hand in the console (real `minibank-dev-*` names and settings, exactly what
+  Terraform will have) and **proves it with the real app**; then cleans it up (in the right
+  order); then Terraform builds it again from scratch, identical. No toy labs. If the app is not
+  ready to test the resource, finish the app part first. `import` only when recreating would
+  break something or lose data (e.g. the hosted zone), and ask first.
 - **Preview first.** Before each task (infra stack or app feature), show what will be built —
   resources or files/API/screens, expected plan or UI, cost, PR split — and wait for the user's
   OK. **After every finished task, update the prototype**
