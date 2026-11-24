@@ -65,14 +65,14 @@ func TestMeOpensOnceWithGift(t *testing.T) {
 	ctx := context.Background()
 	s := setup(t)
 
-	a, err := s.Me(ctx, "sub-1", "Nguyễn Văn An")
+	a, err := s.Me(ctx, "sub-1", "Nguyễn Văn An", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if a.Balance != OpeningGift || a.DisplayName != "NGUYEN VAN AN" || !ValidNumber(a.Number) {
 		t.Errorf("first call: %+v", a)
 	}
-	again, err := s.Me(ctx, "sub-1", "Other Name")
+	again, err := s.Me(ctx, "sub-1", "Other Name", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestMeInParallel(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			a, err := s.Me(ctx, "sub-race", "An")
+			a, err := s.Me(ctx, "sub-race", "An", "")
 			if err != nil {
 				t.Error(err)
 				return
@@ -132,7 +132,7 @@ func TestMaskName(t *testing.T) {
 func TestLookup(t *testing.T) {
 	ctx := context.Background()
 	s := setup(t)
-	a, err := s.Me(ctx, "sub-1", "Nguyễn Văn An")
+	a, err := s.Me(ctx, "sub-1", "Nguyễn Văn An", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,5 +145,49 @@ func TestLookup(t *testing.T) {
 		if _, err := s.Lookup(ctx, n); !errors.Is(err, ErrNotFound) {
 			t.Errorf("lookup %s: err = %v, want ErrNotFound", n, err)
 		}
+	}
+}
+
+type fakeNames struct {
+	name string
+	err  error
+	n    int
+}
+
+func (f *fakeNames) Name(context.Context, string) (string, error) {
+	f.n++
+	return f.name, f.err
+}
+
+func TestMeAsksUserInfoOnlyWhenOpening(t *testing.T) {
+	ctx := context.Background()
+	s := setup(t)
+	names := &fakeNames{name: "Trần Thị Bình"}
+	s.Names = names
+
+	a, err := s.Me(ctx, "sub-cognito", "", "access-token")
+	if err != nil || a.DisplayName != "TRAN THI BINH" {
+		t.Fatalf("got %+v, %v", a, err)
+	}
+	if _, err := s.Me(ctx, "sub-cognito", "", "access-token"); err != nil {
+		t.Fatal(err)
+	}
+	if names.n != 1 {
+		t.Errorf("userInfo called %d times, want 1 (only on open)", names.n)
+	}
+}
+
+func TestMeUserInfoDownOpensNothing(t *testing.T) {
+	ctx := context.Background()
+	s := setup(t)
+	s.Names = &fakeNames{err: errors.New("cognito unreachable")}
+
+	if _, err := s.Me(ctx, "sub-x", "", "access-token"); err == nil {
+		t.Fatal("want an error when the name cannot be read")
+	}
+	var n int
+	s.Pool.QueryRow(ctx, `SELECT count(*) FROM accounts WHERE owner_sub = 'sub-x'`).Scan(&n)
+	if n != 0 {
+		t.Errorf("accounts = %d, want 0 (retry later, with the right name)", n)
 	}
 }

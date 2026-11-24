@@ -12,8 +12,9 @@ import (
 
 // Claims is what handlers need to know about the caller.
 type Claims struct {
-	Sub  string
-	Name string // from the token when present (devtoken); Cognito userInfo comes later
+	Sub   string
+	Name  string // in devtoken's access tokens; Cognito's have none (see UserInfo)
+	Token string // the raw access token, to call userInfo on the caller's behalf
 }
 
 type ctxKey struct{}
@@ -77,6 +78,7 @@ func (v Verifier) Middleware(next http.Handler) http.Handler {
 			http.Error(w, "invalid token", http.StatusUnauthorized)
 			return
 		}
+		c.Token = raw
 		next.ServeHTTP(w, r.WithContext(WithClaims(r.Context(), c)))
 	})
 }

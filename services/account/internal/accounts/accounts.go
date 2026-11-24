@@ -39,18 +39,33 @@ type Recipient struct {
 	MaskedName string `json:"masked_name"`
 }
 
+// NameSource finds a customer's name from their access token (Cognito userInfo).
+type NameSource interface {
+	Name(ctx context.Context, accessToken string) (string, error)
+}
+
 // Service opens and reads customer accounts.
 type Service struct {
-	Pool *pgxpool.Pool
+	Pool  *pgxpool.Pool
+	Names NameSource // optional: used when the token itself carries no name
 }
 
 // Me returns the caller's account, opening it (with the gift) if this is their first request.
+// name may be empty: then, on first open only, it is fetched with token from s.Names.
 // Safe to call many times in parallel for the same sub: exactly one account and one gift.
-func (s Service) Me(ctx context.Context, sub, name string) (Account, error) {
+func (s Service) Me(ctx context.Context, sub, name, token string) (Account, error) {
 	if a, err := s.get(ctx, sub); err == nil {
 		return a, nil
 	} else if !errors.Is(err, pgx.ErrNoRows) {
 		return Account{}, err
+	}
+	if name == "" && s.Names != nil {
+		// the name is stored once and never changes in phase 1, so fail rather than store a wrong one
+		n, err := s.Names.Name(ctx, token)
+		if err != nil {
+			return Account{}, fmt.Errorf("customer name: %w", err)
+		}
+		name = n
 	}
 	// a random number can collide with an existing one; try a few times
 	for range 5 {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/MicahParks/keyfunc/v3"
 
@@ -29,7 +30,14 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := db.Open(ctx, mustEnv(log, "DATABASE_URL"))
+	// local: password in DATABASE_URL; AWS: DB_IAM_AUTH=true, no password anywhere
+	pool, err := db.Open(ctx, log, db.Config{
+		URL:         mustEnv(log, "DATABASE_URL"),
+		IAMAuth:     os.Getenv("DB_IAM_AUTH") == "true",
+		Region:      getenv("AWS_REGION", "ap-southeast-1"),
+		IAMEndpoint: os.Getenv("DB_IAM_ENDPOINT"),
+		WakeTimeout: 60 * time.Second,
+	})
 	if err != nil {
 		log.Error("database", "err", err)
 		os.Exit(1)
@@ -61,9 +69,15 @@ func main() {
 	}
 	txnVerifier := txntoken.Verifier{Issuer: mustEnv(log, "TXN_ISSUER"), Keyfunc: txnJWKS.Keyfunc}
 
+	// Cognito: name comes from userInfo; devtoken puts it in the token, so no URL locally
+	var names accounts.NameSource
+	if u := os.Getenv("AUTH_USERINFO_URL"); u != "" {
+		names = auth.UserInfo{URL: u}
+	}
+
 	router := api.NewRouter(api.Deps{
 		DB:        pool,
-		Accounts:  accounts.Service{Pool: pool},
+		Accounts:  accounts.Service{Pool: pool, Names: names},
 		Transfers: transfers.Service{Pool: pool, Tokens: txnVerifier},
 		History:   history.Service{Pool: pool},
 		Auth:      verifier.Middleware,
