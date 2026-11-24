@@ -30,11 +30,11 @@ func setup(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	acc := accounts.Service{Pool: pool}
-	a, err := acc.Me(ctx, "sub-a", "Nguyen Van An")
+	a, err := acc.Me(ctx, "sub-a", "Nguyen Van An", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := acc.Me(ctx, "sub-b", "Tran Thi Binh")
+	b, err := acc.Me(ctx, "sub-b", "Tran Thi Binh", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestFilters(t *testing.T) {
 
 func TestOnlyOwnHistory(t *testing.T) {
 	e := setup(t)
-	c, _ := accounts.Service{Pool: e.pool}.Me(context.Background(), "sub-c", "Le Van Cuong")
+	c, _ := accounts.Service{Pool: e.pool}.Me(context.Background(), "sub-c", "Le Van Cuong", "")
 	e.move(t, e.a, c, 50_000, "secret")
 
 	for _, it := range e.all(t, Query{Sub: "sub-b"}) {

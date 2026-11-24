@@ -62,11 +62,11 @@ func setup(t *testing.T) env {
 		t.Fatal(err)
 	}
 	acc := accounts.Service{Pool: pool}
-	a, err := acc.Me(ctx, "sub-a", "An")
+	a, err := acc.Me(ctx, "sub-a", "An", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	b, err := acc.Me(ctx, "sub-b", "Binh")
+	b, err := acc.Me(ctx, "sub-b", "Binh", "")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -39,7 +39,7 @@ func (f *fakeHistory) List(_ context.Context, q history.Query) (history.Page, er
 	return history.Page{Items: []history.Item{}}, f.err
 }
 
-func (f *fakeAccounts) Me(_ context.Context, sub, _ string) (accounts.Account, error) {
+func (f *fakeAccounts) Me(_ context.Context, sub, _, _ string) (accounts.Account, error) {
 	f.gotSub = sub
 	return accounts.Account{Number: "7020113549", DisplayName: "NGUYEN VAN AN", Balance: 10_000_000}, nil
 }

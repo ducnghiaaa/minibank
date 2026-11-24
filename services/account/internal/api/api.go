@@ -23,7 +23,7 @@ type Pinger interface {
 
 // Accounts opens and reads accounts.
 type Accounts interface {
-	Me(ctx context.Context, sub, name string) (accounts.Account, error)
+	Me(ctx context.Context, sub, name, token string) (accounts.Account, error)
 	Lookup(ctx context.Context, number string) (accounts.Recipient, error)
 }
 
@@ -65,7 +65,7 @@ func NewRouter(d Deps) http.Handler {
 
 	mux.Handle("GET /accounts/me", d.Auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, _ := auth.FromContext(r.Context())
-		a, err := d.Accounts.Me(r.Context(), c.Sub, c.Name)
+		a, err := d.Accounts.Me(r.Context(), c.Sub, c.Name, c.Token)
 		if err != nil {
 			d.Log.Error("accounts/me", "err", err)
 			text(w, http.StatusInternalServerError, "internal error")
